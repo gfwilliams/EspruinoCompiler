@@ -13,7 +13,14 @@ function infer(node) {
     return node.varType;
   }
   
+  var varTypes = {};
+  
   acorn_walk.simple(node, {
+    "Identifier" : function(node) {
+      //console.log("Identifier "+node.name, varTypes, node);
+      if (varTypes[node.name]!==undefined)
+        setType(node, varTypes[node.name]);
+    },
     "Literal" : function(node) {
       node.isNotAName = true;
       if (utils.isInt(node.value)) setType(node, "int"); 
@@ -53,14 +60,31 @@ function infer(node) {
     "ForStatement" : function(node) {
       setType(node.test, "bool");
     },
-    "VariableDeclaration" : function (n) {
+    "AssignmentExpression" : function (node) {
+      if (node.operator == "=") {
+        //console.log("Assign", node.left, getType(node.right));
+        setType(node.left, getType(node.right));
+        if (node.left.type == "Identifier")
+          varTypes[node.left.name] = getType(node.right);
+      }
+    },
+    "VariableDeclaration" : function (node) {
+      node.declarations.forEach(function(node) {
+        setType(node.id, getType(node.init));
+        varTypes[node.id.name] = getType(node.init);
+      });
     }
   });
+  //console.log("Modified "+modified);
+  
+  return modified;
 }
     
 exports.infer = function(node) {
   // while modified, keep going
-  while (infer(node));
+  tries = 100;
+  while (infer(node) && tries--);
+  if (!tries) throw new Error("Infer kept changing stuff");
   // now output
-  console.log(JSON.stringify(node,null,2));
+  //console.log(JSON.stringify(node,null,2));
 }

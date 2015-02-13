@@ -44,9 +44,11 @@ var nodeHandlers = {
     },    
     
     "VariableDeclaration" : function (node) {
+      var c = "";
       node.declarations.forEach(function (node) {
-        out(getCType(node)+" "+node.id.name+(node.init?(" = "+handleAsType(node.init, getType(node))):"")+";\n");
+        c += getCType(node.id)+" "+node.id.name+(node.init?(" = "+handleAsType(node.init, getType(node.id))):"")+";\n";
       });    
+      return c;
     },
     
     "MemberExpression" : function(node) {
@@ -59,7 +61,7 @@ var nodeHandlers = {
     },    
     
     "BinaryExpression" : function(node) {
-      if (getType(node)=="int") {
+      if (getType(node)=="int" || getType(node)=="bool") {
         return handleAsInt(node.left) + " " + node.operator + " " + handleAsInt(node.right);
       } else {
         return convertJsVarToType(
@@ -119,7 +121,25 @@ var nodeHandlers = {
         return handle(node.left) + " "+ node.operator + " " + handle(node.right);
       }
     },       
-    
+    "UpdateExpression" : function(node) {
+      var op = {
+          "++" : "+=",
+          "--" : "-="
+      }[node.operator];
+      if (op===undefined) throw new Error("Unhandled UpdateExpression "+node.operator);     
+      var expr = {
+          type : "AssignmentExpression",
+          operator : op,
+          left : node.argument,
+          right : {
+            type : "Literal",
+            value : 1,
+            varType : node.argument.varType
+          },
+          varType : node.argument.varType
+      };
+      return handle(expr);
+    },    
     "EmptyStatement" : function(node) {
     },
     "ExpressionStatement" : function(node) {
@@ -147,8 +167,22 @@ var nodeHandlers = {
         out(handle(node.alternate));
         setIndent(-1);
         out("}\n");
-      }
-    },      
+      }      
+    }, 
+    "ForStatement" : function(node) {
+      out("for ("+handle(node.init)+""+handleAsBool(node.test)+";"+handle(node.update)+") {\n");
+      setIndent(1);
+      out(handle(node.body));
+      setIndent(-1);
+      out("}\n");
+    },  
+    "WhileStatement" : function(node) {
+      out("while ("+handleAsBool(node.test)+") {\n");
+      setIndent(1);
+      out(handle(node.body));
+      setIndent(-1);
+      out("}\n");
+    },  
 };
 
 var cCodeIndent = 0;
@@ -234,12 +268,15 @@ function callSV(funcName) {
 }
 
 
-exports.compileFunction = function(node) {
+exports.compileFunction = function(node, exports, callback) {
+  
   // Infer types
   infer(node);
   // Look at parameters
+  var paramSpecs = [];
   var params = node.params.map(function( node ) { 
     node.isNotAName = true;
+    paramSpecs.push(getType(node));
     locals.push(node.name);
     return "JsVar *"+node.name; 
   }); 
@@ -249,21 +286,31 @@ exports.compileFunction = function(node) {
       node.declarations.forEach(function (node) {
         locals.push(node.id.name);
       });
-    }
+    },
+    "Identifier" : function(node) {
+      if (isLocal(node.name)) {
+        node.isNotAName = true;
+      }
+    }    
   });  
   console.log(locals);
   
-  // Now output  
-  cCode = require("fs").readFileSync("inc/SmartVar.h").toString();
-  out("JsVar *foobar("+params.join(", ")+") {\n");
+  // Get header stuff
+  cCode = utils.getFunctionDecls(exports);
+  cCode += require("fs").readFileSync("inc/SmartVar.h").toString();
+  // Now output    
+  out('extern "C" {\n');
+  setIndent(1);
+  out("JsVar *myFunction("+params.join(", ")+") {\n");
   setIndent(1);
   // Serialise all statements
   node.body.body.forEach(function(s, idx) {
     if (idx==0) return; // we know this is the 'compiled' string
-    var v = handle(s);
-    if (v) v.free();
+    out(handle(s));    
   });
   out("return 0; // just in case\n");
+  setIndent(-1);
+  out("}\n");
   setIndent(-1);
   out("}\n");
   //out("int main() { foobar(_cnt++); return 0; }\n");
@@ -279,15 +326,37 @@ exports.compileFunction = function(node) {
     //if (error !== null) console.warn('exec error: ' + error);
   });*/
   
-  exec("arm-none-eabi-gcc -mlittle-endian -mthumb -mcpu=cortex-m3  -mfix-cortex-m3-ldrd  -mthumb-interwork -mfloat-abi=soft -nostdinc -nostdlib -fno-exceptions out.cpp -O3 -o out.o", function (error, stdout, stderr) {
-    sys.print('stdout: ' + stdout);
-    sys.print('stderr: ' + stderr);
+  
+  
+  var cflags =  "-mlittle-endian -mthumb -mcpu=cortex-m3  -mfix-cortex-m3-ldrd  -mthumb-interwork -mfloat-abi=soft ";
+  cflags += "-nostdinc -nostdlib ";
+  cflags += "-fno-common -fno-exceptions -fdata-sections -ffunction-sections ";
+  cflags += "-flto -fno-fat-lto-objects -Wl,--allow-multiple-definition "
+  cflags += "-fpic -fpie ";
+  cflags += "-Os ";
+  cflags += "-Tinc/linker.ld ";
+  
+  exec("arm-none-eabi-gcc "+cflags+" out.cpp -o out.elf", function (error, stdout, stderr) {
+    if (stdout) sys.print('gcc stdout: ' + stdout+"\n");
+    if (stderr) sys.print('gcc stderr: ' + stderr+"\n");
     if (error !== null) {
       console.warn('exec error: ' + error);
+      callback();
     } else {
-      exec("arm-none-eabi-objdump -S out.o", function (error, stdout, stderr) {
-        sys.print('stdout: ' + stdout);
-        sys.print('stderr: ' + stderr);
+      // -x = symbol table
+      // -D = all sections
+      exec("arm-none-eabi-objdump -S out.elf", function (error, stdout, stderr) { 
+        if (stdout) sys.print('objdump stdout: ' + stdout+"\n");
+        if (stderr) sys.print('objdump stderr: ' + stderr+"\n");
+      });
+      exec("arm-none-eabi-objcopy -O binary out.elf out.bin", function (error, stdout, stderr) { 
+        if (stdout) sys.print('objcopy stdout: ' + stdout+"\n");
+        if (stderr) sys.print('objcopy stderr: ' + stderr+"\n");
+        var b64 = require("fs").readFileSync("out.bin").toString('base64');
+        var argSpec = "JsVar("+paramSpecs.join(",")+")";
+        var func = "E.nativeCall(0, "+JSON.stringify(argSpec)+", atob("+JSON.stringify(b64)+"))";
+        
+        callback("var "+node.id.name+" = "+func+";");
       });
     }
   });
