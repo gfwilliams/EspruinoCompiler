@@ -1,3 +1,6 @@
+/* very dodgy reference holding implementation, that allows
+ us to pass most of the locking/unlocking to GCC. All this
+ gets collapsed down to virtually nothing */
 class SV {
   JsVar *v;
   bool owned;
