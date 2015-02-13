@@ -15,11 +15,13 @@ function infer(node) {
   
   acorn_walk.simple(node, {
     "Literal" : function(node) {
+      node.isNotAName = true;
       if (utils.isInt(node.value)) setType(node, "int"); 
       else if (utils.isBool(node.value)) setType(node, "bool");
       else setType(node, "JsVar");
     },
     "BinaryExpression" : function(node) {
+      node.isNotAName = true;
       var boolExprs = ["==","===","!=","!==","<","<=",">",">="];
       var intExprs = ["&","|","^"];
       var floatExprs = ["/"];
@@ -29,6 +31,27 @@ function infer(node) {
       else { // normal operator - do type promotion
         setType(node, utils.maxType(getType(node.left), getType(node.right)));
       }
+    },
+    "LogicalExpression" : function(node) {
+      // propogate backwards
+      if (getType(node)=="bool") {
+        setType(node.left, "bool");
+        setType(node.right, "bool");
+      }
+    },
+    "ConditionalExpression" : function(node) {
+      node.isNotAName = true;
+      setType(node.test, "bool");
+      setType(node, utils.maxType(getType(node.consequent), getType(node.alternate)));
+    },    
+    "IfStatement" : function(node) {
+      setType(node.test, "bool");
+    },
+    "WhileStatement" : function(node) {
+      setType(node.test, "bool");
+    },
+    "ForStatement" : function(node) {
+      setType(node.test, "bool");
     },
     "VariableDeclaration" : function (n) {
     }
