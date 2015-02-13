@@ -7,6 +7,7 @@ function sigOff(e) {
     n="";
   }
   if (n.length==z)  parseRx(n);*/
-  hello(1,2)
+  var tst = "World";
+  print("Hello",tst,1+2,e);
 }
 // End

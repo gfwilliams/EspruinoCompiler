@@ -35,13 +35,17 @@ var nodeHandlers = {
       else throw new Error("Unknown literal type "+typeof node.value);
     },        
     "Identifier" : function(node) {
-      if (isLocal(node.name)) return node.name;
+      if (isLocal(node.name)) {
+        if (getType(node)=="JsVar")
+          return "SV::notOwned("+node.name+")";
+        return node.name;
+      }
       return callSV("jspGetNamedVariable", JSON.stringify(node.name));
     },    
     
     "VariableDeclaration" : function (node) {
       node.declarations.forEach(function (node) {
-        out(getCType(node)+" "+node.id.name+(node.init?(" = "+handle(node.init)):"")+";\n");
+        out(getCType(node)+" "+node.id.name+(node.init?(" = "+handleAsType(node.init, getType(node))):"")+";\n");
       });    
     },
     
@@ -258,21 +262,37 @@ exports.compileFunction = function(node) {
     if (idx==0) return; // we know this is the 'compiled' string
     var v = handle(s);
     if (v) v.free();
-  });  
+  });
+  out("return 0; // just in case\n");
   setIndent(-1);
   out("}\n");
-  out("int main() { foobar(_cnt++); return 0; }\n");
+  //out("int main() { foobar(_cnt++); return 0; }\n");
 
   // save to file
   require("fs").writeFileSync("out.cpp", cCode);
   // now run gcc
   var sys = require('sys');
   var exec = require('child_process').exec;
-  child = exec("gcc out.cpp  -fno-exceptions -m32 -o out", function (error, stdout, stderr) {
+  /*child = exec("gcc out.cpp  -fno-exceptions -m32 -o out", function (error, stdout, stderr) {
     sys.print('stdout: ' + stdout);
     sys.print('stderr: ' + stderr);
     //if (error !== null) console.warn('exec error: ' + error);
+  });*/
+  
+  exec("arm-none-eabi-gcc -mlittle-endian -mthumb -mcpu=cortex-m3  -mfix-cortex-m3-ldrd  -mthumb-interwork -mfloat-abi=soft -nostdinc -nostdlib -fno-exceptions out.cpp -O3 -o out.o", function (error, stdout, stderr) {
+    sys.print('stdout: ' + stdout);
+    sys.print('stderr: ' + stderr);
+    if (error !== null) {
+      console.warn('exec error: ' + error);
+    } else {
+      exec("arm-none-eabi-objdump -S out.o", function (error, stdout, stderr) {
+        sys.print('stdout: ' + stdout);
+        sys.print('stderr: ' + stderr);
+      });
+    }
   });
+  
+  
   
   return cCode;
 };
