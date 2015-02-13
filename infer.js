@@ -2,11 +2,13 @@ var utils = require("./utils.js");
 var acorn_walk = require("acorn/util/walk");
 
 function infer(node) {
-  var modified = false;
+  var modified = undefined;
+  
   function setType(node, type) {
-    if (node.varType!==type) {
+    if (node.varType !== type) {      
+      if (!modified) modified = [];
+      modified.push([ node.varType + " -> " + type, node]);
       node.varType = type;
-      modified = true;
     }
   }
   function getType(node) {
@@ -14,10 +16,37 @@ function infer(node) {
   }
   
   var varTypes = {};
+  function updateVarType(name, type, node) {
+    if (type===undefined) return;    
+    if (varTypes[name]===undefined) {
+      varTypes[name] = type;
+    } else {
+      varTypes[name] = utils.maxType(varTypes[name], type);
+    }
+    if (name=="i" && type=="JsVar") {
+      console.log("-----------");
+      console.log(node);
+      throw new Error("Whoa.");
+    }
+  }
+  
+  acorn_walk.simple(node, {
+    "AssignmentExpression" : function (node) {
+      if (node.operator == "=") {
+        if (node.left.type == "Identifier")
+          updateVarType(node.left.name, getType(node.right), node);
+      }
+    },
+    "VariableDeclaration" : function (node) {
+      node.declarations.forEach(function(node) {
+        if (node.init)
+          updateVarType(node.id.name, getType(node.init), node);
+      });
+    }
+  });  
   
   acorn_walk.simple(node, {
     "Identifier" : function(node) {
-      //console.log("Identifier "+node.name, varTypes, node);
       if (varTypes[node.name]!==undefined)
         setType(node, varTypes[node.name]);
     },
@@ -52,13 +81,10 @@ function infer(node) {
       setType(node, utils.maxType(getType(node.consequent), getType(node.alternate)));
     },    
     "IfStatement" : function(node) {
-      setType(node.test, "bool");
     },
     "WhileStatement" : function(node) {
-      setType(node.test, "bool");
     },
     "ForStatement" : function(node) {
-      setType(node.test, "bool");
     },
     "AssignmentExpression" : function (node) {
       if (node.operator == "=") {
@@ -70,21 +96,25 @@ function infer(node) {
     },
     "VariableDeclaration" : function (node) {
       node.declarations.forEach(function(node) {
-        setType(node.id, getType(node.init));
-        varTypes[node.id.name] = getType(node.init);
+        if (varTypes[node.id.name]!==undefined)
+          setType(node.id, varTypes[node.id.name]);
       });
     }
   });
-  //console.log("Modified "+modified);
+  if (modified) {
+   // console.log("Modified "+JSON.stringify(modified,null,2));
+  } else {
+    console.log("Variable types: "+JSON.stringify(varTypes,null,2));
+  }
   
-  return modified;
+  return modified!==undefined;
 }
     
 exports.infer = function(node) {
   // while modified, keep going
   tries = 100;
   while (infer(node) && tries--);
-  if (!tries) throw new Error("Infer kept changing stuff");
+  if (tries<=0) throw new Error("Infer kept changing stuff");
   // now output
   //console.log(JSON.stringify(node,null,2));
 }

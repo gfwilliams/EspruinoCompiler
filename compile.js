@@ -147,7 +147,7 @@ var nodeHandlers = {
     },    
     "BlockStatement" : function(node) {
       node.body.forEach(function(s) {
-        handle(s);
+        out(handle(s));
       });
     },    
     "ReturnStatement" : function(node) {
@@ -293,7 +293,7 @@ exports.compileFunction = function(node, exports, callback) {
       }
     }    
   });  
-  console.log(locals);
+  console.log("Locals: "+locals);
   
   // Get header stuff
   cCode = utils.getFunctionDecls(exports);

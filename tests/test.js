@@ -1,13 +1,14 @@
 // Start
-function sigOff(e) {
+function f() {  
   "compiled";
-  /*var d=e.time-e.lastTime;
-  if (d>0.0005 && d<0.0013) n+=d>0.0008?1:0;
-  else{
-    n="";
+  var x = 1;
+  for (var i=0;i<8;i++) {
+    x = x * 1.5;
   }
-  if (n.length==z)  parseRx(n);*/
-  var tst = "World";
-  print("Hello",tst,1+2,e);
+  return x;
 }
+
+f();
+
+
 // End

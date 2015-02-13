@@ -15,10 +15,9 @@ exports.isBool = function(n) {
 // Give two types, find the 'maximum' type
 exports.maxType = function(a,b) {
   var typeOrder = ["bool","int","JsVar" ];
-  var ai = typeOrder.indexOf(a);
-  if (ai<0) ai = typeOrder.indexOf("JsVar");
+  var ai = typeOrder.indexOf(a);  
   var bi = typeOrder.indexOf(b);
-  if (bi<0) bi = typeOrder.indexOf("JsVar");
+  if (ai<0 || bi<0) return undefined;
   return typeOrder[Math.max(ai,bi)];
 };
 
