@@ -61,7 +61,8 @@ var nodeHandlers = {
     },    
     
     "BinaryExpression" : function(node) {
-      if (getType(node)=="int" || getType(node)=="bool") {
+      if ((getType(node.left)=="int" || getType(node.left)=="bool") &&
+          (getType(node.right)=="int" || getType(node.right)=="bool")) {        
         return handleAsInt(node.left) + " " + node.operator + " " + handleAsInt(node.right);
       } else {
         return convertJsVarToType(

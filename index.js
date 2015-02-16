@@ -1,11 +1,11 @@
 var acorn = require("acorn");
 compileFunction = require("./compile.js").compileFunction;
 
-var exports = [
-               "jsvLock,jsvLockAgainSafe,jsvUnLock,jsvSkipName,jsvMathsOp,jsvMathsOpSkipNames,jsvNewFromFloat,jsvNewFromInteger,jsvNewFromString,jsvNewFromBool,jsvGetFloat,jsvGetInteger,jsvGetBool,jspeiFindInScopes,jspReplaceWith,jspeFunctionCall,jspGetNamedVariable,jspGetNamedField,jspGetVarNamedField,jsvNewWithFlags,",
-               //console.log(peek32(process.env.EXPORT[1], process.env.EXPORT[0].split(",").length).join(","))
-               [14545,14533,14509,43285,82821,163963,174517,174559,174989,174537,76897,173429,77173,37173,96345,127017,93377,93233,92833,174313,195138],
-               536871160 ];
+var exports = { "jsvLock": 14545, "jsvLockAgainSafe": 14533, "jsvUnLock": 14509, "jsvSkipName": 43285,
+    "jsvMathsOp": 82821, "jsvMathsOpSkipNames": 163963, "jsvNewFromFloat": 174517, "jsvNewFromInteger": 174559, "jsvNewFromString": 174989,
+    "jsvNewFromBool": 174537, "jsvGetFloat": 76897, "jsvGetInteger": 173429, "jsvGetBool": 77173, "jspeiFindInScopes": 37173,
+    "jspReplaceWith": 96345, "jspeFunctionCall": 127017, "jspGetNamedVariable": 93377, "jspGetNamedField": 93233, "jspGetVarNamedField": 92833,
+    "jsvNewWithFlags": 174313 };
 
 function compileCode(code, callback) {
   var offset = 0;

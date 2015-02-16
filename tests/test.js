@@ -7,7 +7,7 @@
   }
   return x;
 }*/
-function f() {  
+/*function f() {  
  "compiled";
  for (var y=0;y<32;y++) {
   line="";
@@ -30,6 +30,16 @@ function f() {
    }
    print(line);
  }
+}*/
+function f(e) {
+  "compiled";
+  /*var d=e.time-e.lastTime;
+  if (d>0.0005 && d<0.0013) n+=d>0.0008?1:0;
+  else{
+    n="";
+  }
+  if (n.length==10)  parseRx(n);*/
+  return e.time;
 }
 
 // End

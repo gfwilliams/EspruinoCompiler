@@ -32,7 +32,6 @@ exports.getMathsOpOperator = function(op) {
 
 exports.getFunctionDecls = function(exports) {
   var code = "class JsVar;\n";
-  var fns = exports[0].split(",");
  
   var funcDecls = {
   "jsvLockAgainSafe" : "JsVar *(*jsvLockAgainSafe)(JsVar *v) = (JsVar *(*)(JsVar *))",
@@ -51,10 +50,9 @@ exports.getFunctionDecls = function(exports) {
   };
   
   for (var f in funcDecls) {
-    var idx = fns.indexOf(f);
-    if (idx<0) throw new Error("Function '"+f+"' not found in exports list!");
+    if (!f in exports) throw new Error("Function '"+f+"' not found in exports list!");
     //var addr = baseAddr + idx*4;  addr = "*(unsigned int*)"+addr;
-    var addr = exports[1][idx];
+    var addr = exports[f];
     code += funcDecls[f]+addr+";\n";
   }
   return code;
