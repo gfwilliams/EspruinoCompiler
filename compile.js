@@ -7,8 +7,7 @@ function getType(node) {
   return node.varType;
 }
 
-function getCType(node) {
-  var t = getType(node);
+function getCType(t) {
   if (t=="JsVar") return "SV";
   return t;
 }
@@ -46,7 +45,8 @@ var nodeHandlers = {
     "VariableDeclaration" : function (node) {
       var c = "";
       node.declarations.forEach(function (node) {
-        c += getCType(node.id)+" "+node.id.name+(node.init?(" = "+handleAsType(node.init, getType(node.id))):"")+";\n";
+        var typ = locals[node.id.name].type;
+        c += getCType(typ)+" "+node.id.name+(node.init?(" = "+handleAsType(node.init, typ)):"")+";\n";
       });    
       return c;
     },
@@ -173,7 +173,9 @@ var nodeHandlers = {
       }      
     }, 
     "ForStatement" : function(node) {
-      out("for ("+handle(node.init)+""+handleAsBool(node.test)+";"+handle(node.update)+") {\n");
+      var initCode = handle(node.init).trim();
+      if (initCode.substr(-1)!=";") initCode += ";";
+      out("for ("+initCode+""+handleAsBool(node.test)+";"+handle(node.update)+") {\n");
       setIndent(1);
       out(handle(node.body));
       setIndent(-1);
@@ -289,8 +291,8 @@ exports.jsToC = function(node) {
     "VariableDeclaration" : function (node) {
       node.declarations.forEach(function (node) {
         locals[node.id.name] = {
-            type : getType(node),
-            isSV: getType(node)=="JsVar", // not an SV if it's not a JsVar 
+            type : getType(node.id),
+            isSV: getType(node.id)=="JsVar", // not an SV if it's not a JsVar 
         };
       });
     },

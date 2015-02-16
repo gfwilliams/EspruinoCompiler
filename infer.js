@@ -1,40 +1,41 @@
 var utils = require("./utils.js");
 var acorn_walk = require("acorn/util/walk");
 
-function infer(node) {
+function infer(node, forceUndefined) {
+  // forceUndefined = treat unknown types as JsVars
   var modified = undefined;
   
   function setType(node, type) {
     if (node.varType !== type) {      
       if (!modified) modified = [];
-      modified.push([ node.varType + " -> " + type, node]);
+      modified.push([ node.varType + " -> " + type, node, (new Error()).stack]);
       node.varType = type;
     }
   }
   function getType(node) {
+    if (forceUndefined && !node.varType)
+      return "JsVar";
     return node.varType;
   }
   
   var varTypes = {};
   function updateVarType(name, type, node) {
-    if (type===undefined) return;    
+    if (type===undefined) return;
     if (varTypes[name]===undefined) {
       varTypes[name] = type;
     } else {
       varTypes[name] = utils.maxType(varTypes[name], type);
     }
-    if (name=="i" && type=="JsVar") {
-      console.log("-----------");
-      console.log(node);
-      throw new Error("Whoa.");
-    }
   }
   
+  // Look for assigns/inits to basic variables
   acorn_walk.simple(node, {
     "AssignmentExpression" : function (node) {
-      if (node.operator == "=") {
-        if (node.left.type == "Identifier")
-          updateVarType(node.left.name, getType(node.right), node);
+      if (node.left.type == "Identifier") {
+        // if not declared first, it's pulled in from interpreter so is a JsVar
+        if (varTypes[node.left.name] === undefined)
+          varTypes[node.left.name] = "JsVar";
+        updateVarType(node.left.name, getType(node.right), node);
       }
     },
     "VariableDeclaration" : function (node) {
@@ -44,11 +45,23 @@ function infer(node) {
       });
     }
   });  
+  /* Any identified that's just mentioned needs to be loaded from
+   the interpreter, so is def. a JsVar */ 
+  acorn_walk.simple(node, {
+    "Identifier" : function (node) {
+      if (varTypes[node.name] === undefined)
+        varTypes[node.name] = "JsVar";
+    }
+  });    
   
   acorn_walk.simple(node, {
     "Identifier" : function(node) {
       if (varTypes[node.name]!==undefined)
         setType(node, varTypes[node.name]);
+      else if (forceUndefined) {
+        varTypes[node.name] = "JsVar";
+        setType(node, varTypes[node.name]);
+      }        
     },
     "Literal" : function(node) {
       node.isNotAName = true;
@@ -69,11 +82,7 @@ function infer(node) {
       }
     },
     "LogicalExpression" : function(node) {
-      // propogate backwards
-      if (getType(node)=="bool") {
-        setType(node.left, "bool");
-        setType(node.right, "bool");
-      }
+      setType(node, utils.maxType(getType(node.left), getType(node.right)));
     },
     "ConditionalExpression" : function(node) {
       node.isNotAName = true;
@@ -87,12 +96,6 @@ function infer(node) {
     "ForStatement" : function(node) {
     },
     "AssignmentExpression" : function (node) {
-      if (node.operator == "=") {
-        //console.log("Assign", node.left, getType(node.right));
-        setType(node.left, getType(node.right));
-        if (node.left.type == "Identifier")
-          varTypes[node.left.name] = getType(node.right);
-      }
     },
     "VariableDeclaration" : function (node) {
       node.declarations.forEach(function(node) {
@@ -102,7 +105,7 @@ function infer(node) {
     }
   });
   if (modified) {
-   // console.log("Modified "+JSON.stringify(modified,null,2));
+    console.log("Modified "+JSON.stringify(modified,null,2));
   } else {
     console.log("Variable types: "+JSON.stringify(varTypes,null,2));
   }
@@ -111,10 +114,16 @@ function infer(node) {
 }
     
 exports.infer = function(node) {
-  // while modified, keep going
-  tries = 100;
-  while (infer(node) && tries--);
-  if (tries<=0) throw new Error("Infer kept changing stuff");
+  // Try and work out types without forcing anything 
+  tries = 20;
+  while (infer(node, false) && tries--);
+  if (tries<=0) throw new Error("Infer(unforced) kept changing stuff");
+  // now just assume that anything we're not sure about is a JsVar
+  tries = 20;
+  while (infer(node, true) && tries--);
+  if (tries<=0) throw new Error("Infer(forced) kept changing stuff");
+  
+  
   // now output
-  //console.log(JSON.stringify(node,null,2));
+  console.log(JSON.stringify(node,null,2));
 }

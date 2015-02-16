@@ -12,8 +12,10 @@ public:
     v = jsvLockAgainSafe(o.v);
   }
   inline __attribute__((always_inline)) SV &operator=(const SV &o) {
+    if (owned) jsvUnLock(v);
     owned = true;
     v = jsvLockAgainSafe(o.v);
+    return *this;
   }
   inline __attribute__((always_inline)) SV(JsVar *value) {
     owned = true;
