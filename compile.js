@@ -14,7 +14,7 @@ function getCType(node) {
 }
 
 var locals = [];
-function isLocal(name) { return locals.indexOf(name)>=0; }
+function isLocal(name) { return name in locals; }
 
 var nodeHandlers = {
 
@@ -36,7 +36,7 @@ var nodeHandlers = {
     },        
     "Identifier" : function(node) {
       if (isLocal(node.name)) {
-        if (getType(node)=="JsVar")
+        if (getType(node)=="JsVar" && !locals[node.name].isSV)
           return "SV::notOwned("+node.name+")";
         return node.name;
       }
@@ -116,7 +116,10 @@ var nodeHandlers = {
           };
           rhs = handleAsJsVar(expr);
         }
-        return call("jspReplaceWith", handleAsJsVar(node.left), rhs);
+        if (node.left.type=="Identifier" && isLocal(node.left.name))
+          return handleAsJsVar(node.left) +" = "+ rhs;
+        else
+          return call("jspReplaceWith", handleAsJsVar(node.left), rhs);
       } else {
         return handle(node.left) + " "+ node.operator + " " + handle(node.right);
       }
@@ -267,9 +270,7 @@ function callSV(funcName) {
   return "SV("+call.apply(this,arguments)+")";
 }
 
-
-exports.compileFunction = function(node, exports, callback) {
-  
+exports.jsToC = function(node) {
   // Infer types
   infer(node);
   // Look at parameters
@@ -277,14 +278,20 @@ exports.compileFunction = function(node, exports, callback) {
   var params = node.params.map(function( node ) { 
     node.isNotAName = true;
     paramSpecs.push(getType(node));
-    locals.push(node.name);
+    locals[node.name] = { 
+        type : getType(node),
+        isSV: false 
+    };
     return "JsVar *"+node.name; 
   }); 
   // Look at locals
   acorn_walk.simple(node, {
     "VariableDeclaration" : function (node) {
       node.declarations.forEach(function (node) {
-        locals.push(node.id.name);
+        locals[node.id.name] = {
+            type : getType(node),
+            isSV: getType(node)=="JsVar", // not an SV if it's not a JsVar 
+        };
       });
     },
     "Identifier" : function(node) {
@@ -293,15 +300,17 @@ exports.compileFunction = function(node, exports, callback) {
       }
     }    
   });  
-  console.log("Locals: "+locals);
+  console.log("Locals: ",locals);
   
   // Get header stuff
-  cCode = utils.getFunctionDecls(exports);
+  cCode = "";
   cCode += require("fs").readFileSync("inc/SmartVar.h").toString();
   // Now output    
   out('extern "C" {\n');
   setIndent(1);
-  out("JsVar *myFunction("+params.join(", ")+") {\n");
+  var functionName = "myFunction";
+  var cArgSpec = "JsVar *"+functionName+"("+params.join(", ")+")";
+  out(cArgSpec + " {\n");
   setIndent(1);
   // Serialise all statements
   node.body.body.forEach(function(s, idx) {
@@ -314,9 +323,23 @@ exports.compileFunction = function(node, exports, callback) {
   setIndent(-1);
   out("}\n");
   //out("int main() { foobar(_cnt++); return 0; }\n");
+  
+  return {
+    code : cCode,
+    functionName : functionName,
+    cArgSpec : cArgSpec, 
+    jsArgSpec : "JsVar("+paramSpecs.join(",")+")"
+  };  
+};
+
+exports.compileFunction = function(node, exportInfo, callback) {
+  var compiled = exports.jsToC(node);
+  var code = utils.getFunctionDecls(exportInfo);
+  code += compiled.code;
+  
 
   // save to file
-  require("fs").writeFileSync("out.cpp", cCode);
+  require("fs").writeFileSync("out.cpp", code);
   // now run gcc
   var sys = require('sys');
   var exec = require('child_process').exec;
@@ -331,7 +354,7 @@ exports.compileFunction = function(node, exports, callback) {
   var cflags =  "-mlittle-endian -mthumb -mcpu=cortex-m3  -mfix-cortex-m3-ldrd  -mthumb-interwork -mfloat-abi=soft ";
   cflags += "-nostdinc -nostdlib ";
   cflags += "-fno-common -fno-exceptions -fdata-sections -ffunction-sections ";
-  cflags += "-flto -fno-fat-lto-objects -Wl,--allow-multiple-definition "
+  cflags += "-flto -fno-fat-lto-objects -Wl,--allow-multiple-definition ";
   cflags += "-fpic -fpie ";
   cflags += "-Os ";
   cflags += "-Tinc/linker.ld ";
@@ -352,9 +375,8 @@ exports.compileFunction = function(node, exports, callback) {
       exec("arm-none-eabi-objcopy -O binary out.elf out.bin", function (error, stdout, stderr) { 
         if (stdout) sys.print('objcopy stdout: ' + stdout+"\n");
         if (stderr) sys.print('objcopy stderr: ' + stderr+"\n");
-        var b64 = require("fs").readFileSync("out.bin").toString('base64');
-        var argSpec = "JsVar("+paramSpecs.join(",")+")";
-        var func = "E.nativeCall(0, "+JSON.stringify(argSpec)+", atob("+JSON.stringify(b64)+"))";
+        var b64 = require("fs").readFileSync("out.bin").toString('base64');        
+        var func = "E.nativeCall(0, "+JSON.stringify(compiled.jsArgSpec)+", atob("+JSON.stringify(b64)+"))";
         
         callback("var "+node.id.name+" = "+func+";");
       });

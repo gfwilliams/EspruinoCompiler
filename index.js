@@ -3,7 +3,8 @@ compileFunction = require("./compile.js").compileFunction;
 
 var exports = [
                "jsvLock,jsvLockAgainSafe,jsvUnLock,jsvSkipName,jsvMathsOp,jsvMathsOpSkipNames,jsvNewFromFloat,jsvNewFromInteger,jsvNewFromString,jsvNewFromBool,jsvGetFloat,jsvGetInteger,jsvGetBool,jspeiFindInScopes,jspReplaceWith,jspeFunctionCall,jspGetNamedVariable,jspGetNamedField,jspGetVarNamedField,jsvNewWithFlags,",
-               [37873, 37861, 37837, 62789, 89841, 164039, 58621, 58663, 177905, 58641, 65337, 176609, 65613, 52597, 77929, 140857, 166177, 74817, 74417, 177493, 198591],
+               //console.log(peek32(process.env.EXPORT[1], process.env.EXPORT[0].split(",").length).join(","))
+               [14545,14533,14509,43285,82821,163963,174517,174559,174989,174537,76897,173429,77173,37173,96345,127017,93377,93233,92833,174313,195138],
                536871160 ];
 
 function compileCode(code, callback) {
