@@ -46,6 +46,8 @@ function compileCode(code, callback) {
     console.warn("Acorn parse for plugins/compiler.js failed. Your code is probably broken.");
     callback();
   }
+  if (tasks==0)
+    callback(code);
 }
 
 
