@@ -289,13 +289,15 @@ exports.jsToC = function(node) {
     return "JsVar *"+node.name; 
   }); 
   // Look at locals
-  acorn_walk.simple(node, {
+  var localWalker = {
     "VariableDeclaration" : function (node) {
       node.declarations.forEach(function (node) {
         locals[node.id.name] = {
             type : getType(node.id),
             isSV: getType(node.id)=="JsVar", // not an SV if it's not a JsVar 
         };
+        // walked doesn't handle VariableDeclarator.init
+        if (node.init) acorn_walk.simple(node.init, localWalker);  
       });
     },
     "Identifier" : function(node) {
@@ -303,7 +305,8 @@ exports.jsToC = function(node) {
         node.isNotAName = true;
       }
     }    
-  });  
+  };
+  acorn_walk.simple(node, localWalker);  
   console.log("Locals: ",locals);
   
   // Get header stuff
