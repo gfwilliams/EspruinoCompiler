@@ -3,13 +3,6 @@ var acorn = require("acorn");
 var qs = require('querystring');
 compileFunction = require("./compile.js").compileFunction;
 
-var exports = { "jsvLock": 14545, "jsvLockAgainSafe": 14533, "jsvUnLock": 14509, "jsvSkipName": 43285,
-    "jsvMathsOp": 82821, "jsvMathsOpSkipNames": 163963, "jsvNewFromFloat": 174517, "jsvNewFromInteger": 174559, "jsvNewFromString": 174989,
-    "jsvNewFromBool": 174537, "jsvGetFloat": 76897, "jsvGetInteger": 173429, "jsvGetBool": 77173, "jspeiFindInScopes": 37173,
-    "jspReplaceWith": 96345, "jspeFunctionCall": 127017, "jspGetNamedVariable": 93377, "jspGetNamedField": 93233, "jspGetVarNamedField": 92833,
-    "jsvNewWithFlags": 174313 };
-
-
 function compile(js, exports, callback) {
   var ast = acorn.parse(js, { ecmaVersion : 6 });
   console.log(ast);
@@ -61,7 +54,7 @@ var server = require("http").createServer(function (request, response) {
   }
 });
 
-server.listen(8000, function() {
+server.listen(32766, function() {
   address = server.address();
   console.log("Opened server on %j", address);
 });

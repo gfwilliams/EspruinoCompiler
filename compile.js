@@ -2,6 +2,7 @@ var utils = require("./utils.js");
 var infer = require("./infer.js").infer;
 var acorn_walk = require("acorn/util/walk");
 
+
 function getType(node) {
   if (!node.varType) return "JsVar";
   return node.varType;
@@ -340,13 +341,16 @@ exports.compileFunction = function(node, exportInfo, callback) {
   var code = utils.getFunctionDecls(exportInfo);
   code += compiled.code;
   
+  var crypto = require('crypto');
+  var filename = "out"+crypto.randomBytes(4).readUInt32LE(0);
+
 
   // save to file
-  require("fs").writeFileSync("out.cpp", code);
+  require("fs").writeFileSync(filename+".cpp", code);
   // now run gcc
   var sys = require('sys');
   var exec = require('child_process').exec;
-  /*child = exec("gcc out.cpp  -fno-exceptions -m32 -o out", function (error, stdout, stderr) {
+  /*child = exec("gcc "+filename+".cpp  -fno-exceptions -m32 -o "+filename+"", function (error, stdout, stderr) {
     sys.print('stdout: ' + stdout);
     sys.print('stderr: ' + stderr);
     //if (error !== null) console.warn('exec error: ' + error);
@@ -362,7 +366,8 @@ exports.compileFunction = function(node, exportInfo, callback) {
   cflags += "-Os ";
   cflags += "-Tinc/linker.ld ";
   
-  exec("arm-none-eabi-gcc "+cflags+" out.cpp -o out.elf", function (error, stdout, stderr) {
+  exec("arm-none-eabi-gcc "+cflags+" "+filename+".cpp -o "+filename+".elf", function (error, stdout, stderr) {
+    require("fs").unlink(filename+".cpp");
     if (stdout) sys.print('gcc stdout: ' + stdout+"\n");
     if (stderr) sys.print('gcc stderr: ' + stderr+"\n");
     if (error !== null) {
@@ -371,14 +376,16 @@ exports.compileFunction = function(node, exportInfo, callback) {
     } else {
       // -x = symbol table
       // -D = all sections
-      exec("arm-none-eabi-objdump -S out.elf", function (error, stdout, stderr) { 
+/*      exec("arm-none-eabi-objdump -S "+filename+".elf", function (error, stdout, stderr) { 
         if (stdout) sys.print('objdump stdout: ' + stdout+"\n");
         if (stderr) sys.print('objdump stderr: ' + stderr+"\n");
-      });
-      exec("arm-none-eabi-objcopy -O binary out.elf out.bin", function (error, stdout, stderr) { 
+      });*/
+      exec("arm-none-eabi-objcopy -O binary "+filename+".elf "+filename+".bin", function (error, stdout, stderr) { 
         if (stdout) sys.print('objcopy stdout: ' + stdout+"\n");
         if (stderr) sys.print('objcopy stderr: ' + stderr+"\n");
-        var b64 = require("fs").readFileSync("out.bin").toString('base64');        
+        var b64 = require("fs").readFileSync(filename+".bin").toString('base64');        
+        require("fs").unlink(filename+".bin");
+        require("fs").unlink(filename+".elf");
         var func = "E.nativeCall(0, "+JSON.stringify(compiled.jsArgSpec)+", atob("+JSON.stringify(b64)+"))";
         
         callback("var "+node.id.name+" = "+func+";");
