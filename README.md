@@ -26,3 +26,10 @@ You need:
 
 * A new node.js
 * [gcc-arm-embedded](https://launchpad.net/gcc-arm-embedded/+download) in your path
+
+Running
+-------
+
+* Run `node server.js`
+* Go into Web IDE settings and set `Communications / JavaScript Compiler URL` to `http://localhost:32766`
+ 
