@@ -379,10 +379,10 @@ exports.compileFunction = function(node, exportInfo, callback) {
     } else {
       // -x = symbol table
       // -D = all sections
-/*      exec("arm-none-eabi-objdump -S "+filename+".elf", function (error, stdout, stderr) { 
+      exec("arm-none-eabi-objdump -S "+filename+".elf", function (error, stdout, stderr) { 
         if (stdout) sys.print('objdump stdout: ' + stdout+"\n");
         if (stderr) sys.print('objdump stderr: ' + stderr+"\n");
-      });*/
+      });
       exec("arm-none-eabi-objcopy -O binary "+filename+".elf "+filename+".bin", function (error, stdout, stderr) { 
         if (stdout) sys.print('objcopy stdout: ' + stdout+"\n");
         if (stderr) sys.print('objcopy stderr: ' + stderr+"\n");
