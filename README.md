@@ -1,6 +1,8 @@
 Espruino Compiler
 ===============
 
+See [the Espruino Compilation Page](http://www.espruino.com/Compilation)
+
 This project does the following:
 
 * Turns JavaScript code into C++ (that calls into Espruino library functions for more complicated operations)
