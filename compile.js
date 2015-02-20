@@ -340,10 +340,13 @@ exports.compileFunction = function(node, exportInfo, callback) {
   var compiled = exports.jsToC(node);
   var code = utils.getFunctionDecls(exportInfo);
   code += compiled.code;
+
+  console.log("----------------------------------------");
+  console.log(compiled.code);
+  console.log("----------------------------------------");
   
   var crypto = require('crypto');
   var filename = "out"+crypto.randomBytes(4).readUInt32LE(0);
-
 
   // save to file
   require("fs").writeFileSync(filename+".cpp", code);
