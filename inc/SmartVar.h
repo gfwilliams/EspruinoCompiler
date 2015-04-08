@@ -31,6 +31,7 @@ public:
     return s;
   }
   inline __attribute__((always_inline)) JsVar *give() {
+    if (!owned) v = jsvLockAgainSafe(v);
     owned = false;
     return v;
   }

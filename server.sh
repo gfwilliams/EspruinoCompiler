@@ -7,4 +7,13 @@ fi
 
 cd `dirname $0`
 
-node server.js
+RUNNING=1
+while [ $RUNNING ]; do
+  node server.js
+  echo -------------------------------------------
+  echo Server stopped - restarting...
+  echo -------------------------------------------
+  sleep 2s
+done
+
+
