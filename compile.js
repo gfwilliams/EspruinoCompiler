@@ -345,7 +345,7 @@ exports.compileFunction = function(node, exportInfo, callback) {
   code += compiled.code;
 
   console.log("----------------------------------------");
-  console.log(compiled.code);
+  console.log(code);
   console.log("----------------------------------------");
   
   var crypto = require('crypto');
@@ -382,7 +382,7 @@ exports.compileFunction = function(node, exportInfo, callback) {
     } else {
       // -x = symbol table
       // -D = all sections
-      exec("arm-none-eabi-objdump -S "+filename+".elf", function (error, stdout, stderr) { 
+      exec("arm-none-eabi-objdump -S -D "+filename+".elf", function (error, stdout, stderr) { 
         if (stdout) sys.print('objdump stdout: ' + stdout+"\n");
         if (stderr) sys.print('objdump stderr: ' + stderr+"\n");
       });
@@ -392,7 +392,7 @@ exports.compileFunction = function(node, exportInfo, callback) {
         var b64 = require("fs").readFileSync(filename+".bin").toString('base64');        
         require("fs").unlink(filename+".bin");
         require("fs").unlink(filename+".elf");
-        var func = "E.nativeCall(0, "+JSON.stringify(compiled.jsArgSpec)+", atob("+JSON.stringify(b64)+"))";
+        var func = "E.nativeCall(1, "+JSON.stringify(compiled.jsArgSpec)+", atob("+JSON.stringify(b64)+"))";
         
         callback("var "+node.id.name+" = "+func+";");
       });
