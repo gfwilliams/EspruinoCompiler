@@ -1,5 +1,5 @@
 var utils = require("./utils.js");
-var acorn_walk = require("acorn/util/walk");
+var acorn_walk = require("acorn/dist/walk");
 
 function infer(node, forceUndefined) {
   // forceUndefined = treat unknown types as JsVars

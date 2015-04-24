@@ -1,6 +1,6 @@
 var utils = require("./utils.js");
 var infer = require("./infer.js").infer;
-var acorn_walk = require("acorn/util/walk");
+var acorn_walk = require("acorn/dist/walk");
 
 
 function getType(node) {
