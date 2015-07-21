@@ -2,6 +2,10 @@ var utils = require("./utils.js");
 var infer = require("./infer.js").infer;
 var acorn_walk = require("acorn/dist/walk");
 
+var locals;
+var cCodeIndent = 0;
+var cCode = "";
+var cTempVar = 0;
 
 function getType(node) {
   if (!node.varType) return "JsVar";
@@ -21,8 +25,10 @@ function getField(object, field, wantName) {
   }
 }
 
-var locals = [];
-function isLocal(name) { return name in locals; }
+function isLocal(name) {
+  console.log("IS "+name+" in LOCALS?", locals)
+  return name in locals; 
+}
 
 var nodeHandlers = {
 
@@ -96,13 +102,13 @@ var nodeHandlers = {
       // otherwise we'd have to do some really strange stuff
       
       //console.log("CALLEE: "+JSON.stringify(node.callee));
-      var thisVar = 0;
       if (node.callee.object != undefined /*&& callee.type == "MemberExpression"*/) {
-        initCode += "SV thisVar="+handleAsJsVarSkipName(node.callee.object)+";";
-        var methodVar = getField("thisVar", node.callee.property, false);
+        var thisVar = getTempVar();
+        initCode += "SV "+thisVar+"="+handleAsJsVarSkipName(node.callee.object)+";";
+        var methodVar = getField(thisVar, node.callee.property, false);
         
         return "({"+initCode+      
-                 callSV("jspeFunctionCall",methodVar, 0/*funcName*/, "thisVar"/*this*/, 0/*isParsing*/, node.arguments.length/*argCount*/, "args"/* argPtr */)+";})";
+                 callSV("jspeFunctionCall",methodVar, 0/*funcName*/, thisVar/*this*/, 0/*isParsing*/, node.arguments.length/*argCount*/, "args"/* argPtr */)+";})";
       } else {
         // Simple function call (not method)
         return "({"+initCode+ 
@@ -114,15 +120,15 @@ var nodeHandlers = {
       var t = getType(node);
       return handleAsBool(node.test)+"?"+handleAsType(node.consequent,t)+":"+handleAsType(node.alternate,t);
     },
-    "AssignmentExpression" : function(node) {
+    "AssignmentExpression" : function(node, needsResult) {
       if (getType(node.left)=="JsVar") {
         var rhs;
         if (node.operator=="=") {
           rhs = handleAsJsVar(node.right);
         } else {
-          var op;
-          if (node.operator == "+=") op = "+";
-          if (node.operator == "-=") op = "-";
+          var op, postinc = false;
+          if (node.operator == "+=") op = "+"; 
+          if (node.operator == "-=") op = "-"; 
           if (node.operator == "*=") op = "*";
           if (node.operator == "/=") op = "/";
           if (node.operator == "%=") op = "%";
@@ -140,18 +146,24 @@ var nodeHandlers = {
         }
         if (node.left.type=="Identifier" && isLocal(node.left.name))
           return handleAsJsVar(node.left) +" = "+ rhs;
-        else
-          return call("jspReplaceWith", handleAsJsVar(node.left), rhs);
+        else {
+          // replaceWith doesn't return anything, so we must store the value ourselves
+          if (needsResult) {
+            var tv = getTempVar();
+            return "({SV "+tv+"="+handleAsJsVar(node.left)+";"+call("jspReplaceWith", tv, rhs)+";"+tv+";})";
+          } else
+            return call("jspReplaceWith", handleAsJsVar(node.left), rhs);
+        }
       } else {
-        return handle(node.left) + " "+ node.operator + " " + handle(node.right);
+        return handle(node.left, true) + " "+ node.operator + " " + handle(node.right, true);
       }
     },       
-    "UpdateExpression" : function(node) {
+    "UpdateExpression" : function(node, needsResult) {
       var op = {
           "++" : "+=",
           "--" : "-="
       }[node.operator];
-      if (op===undefined) throw new Error("Unhandled UpdateExpression "+node.operator);     
+      if (op===undefined) throw new Error("Unhandled UpdateExpression "+node.operator);
       var expr = {
           type : "AssignmentExpression",
           operator : op,
@@ -162,17 +174,25 @@ var nodeHandlers = {
             varType : node.argument.varType
           },
           varType : node.argument.varType
-      };
-      return handle(expr);
+      };      
+      if (node.prefix || !needsResult) {
+        // all great - we just treat it like += 1
+        return handle(expr, needsResult);
+      } else {
+       // it's postfix - we must store the value first, and return that
+        // this isn't great - as we search for the variable by name twice
+        var tv = getTempVar();
+        return "({SV "+tv+"="+handleAsJsVarSkipName(node.argument)+";"+handle(expr, true)+";"+tv+";})";
+      }
     },    
     "EmptyStatement" : function(node) {
     },
     "ExpressionStatement" : function(node) {
-      out(handle(node.expression)+";\n");
+      out(handle(node.expression, false/* no result needed */)+";\n");
     },    
     "BlockStatement" : function(node) {
       node.body.forEach(function(s) {
-        out(handle(s));
+        out(handle(s, false/* no result needed */));
       });
     },    
     "ReturnStatement" : function(node) {
@@ -181,7 +201,7 @@ var nodeHandlers = {
     "IfStatement" : function(node) {
       out("if ("+handleAsBool(node.test)+") {\n");
       setIndent(1);
-      out(handle(node.consequent));
+      out(handle(node.consequent, false/* no result needed */));
       if (!node.alternate) {
         setIndent(-1);
         out("}\n");        
@@ -189,36 +209,32 @@ var nodeHandlers = {
         setIndent(-1);
         out("} else {\n");
         setIndent(1);
-        out(handle(node.alternate));
+        out(handle(node.alternate, false/* no result needed */));
         setIndent(-1);
         out("}\n");
       }      
     }, 
     "ForStatement" : function(node) {
-      var initCode = handle(node.init).trim();
+      var initCode = handle(node.init, false/* no result needed */).trim();
       if (initCode.substr(-1)!=";") initCode += ";";
-      out("for ("+initCode+""+handleAsBool(node.test)+";"+handle(node.update)+") {\n");
+      out("for ("+initCode+""+handleAsBool(node.test)+";"+handle(node.update, false/* no result needed */)+") {\n");
       setIndent(1);
-      out(handle(node.body));
+      out(handle(node.body, false/* no result needed */));
       setIndent(-1);
       out("}\n");
     },  
     "WhileStatement" : function(node) {
       out("while ("+handleAsBool(node.test)+") {\n");
       setIndent(1);
-      out(handle(node.body));
+      out(handle(node.body, false/* no result needed */));
       setIndent(-1);
       out("}\n");
     },  
 };
 
-var cCodeIndent = 0;
-var cCode = "";
-var cTempVar = 0;
-
-function handle(node) {
+function handle(node, needsResult) {
   if (node.type in nodeHandlers)
-    return nodeHandlers[node.type](node);
+    return nodeHandlers[node.type](node, needsResult);
   console.warn("Unknown", node);
   throw new Error(node.type+" is not implemented yet");  
 }
@@ -231,9 +247,9 @@ function convertJsVarToType(v, type) {
 }
 
 function handleAsJsVar(node) {
-  if (getType(node)=="int") return callSV("jsvNewFromInteger", handle(node));
-  if (getType(node)=="bool") return callSV("jsvNewFromBool", handle(node));
-  return handle(node);
+  if (getType(node)=="int") return callSV("jsvNewFromInteger", handle(node, true));
+  if (getType(node)=="bool") return callSV("jsvNewFromBool", handle(node, true));
+  return handle(node, true);
 }
 
 function handleAsJsVarSkipName(node) {
@@ -242,13 +258,13 @@ function handleAsJsVarSkipName(node) {
 }
 
 function handleAsInt(node) {
-  if (getType(node)=="int" || getType(node)=="bool") return handle(node);
+  if (getType(node)=="int" || getType(node)=="bool") return handle(node, true);
   return call("jsvGetInteger", handleAsJsVarSkipName(node));
 }
 
 function handleAsBool(node) {
-  if (getType(node)=="bool") return handle(node);
-  if (getType(node)=="int") return "(("+handle(node)+")!=0)";
+  if (getType(node)=="bool") return handle(node, true);
+  if (getType(node)=="int") return "(("+handle(node, true)+")!=0)";
   return call("jsvGetBool", handleAsJsVarSkipName(node));
 }
 
@@ -295,6 +311,11 @@ function callSV(funcName) {
 }
 
 exports.jsToC = function(node) {
+  // Initialise
+  locals = [];
+  cCode = "";
+  cCodeIndent = 0;
+  cTempVar = 0;
   // Infer types
   infer(node);
   // Look at parameters
@@ -330,7 +351,6 @@ exports.jsToC = function(node) {
   console.log("Locals: ",locals);
   
   // Get header stuff
-  cCode = "";
   cCode += require("fs").readFileSync("inc/SmartVar.h").toString();
   // Now output    
   out('extern "C" {\n');
@@ -342,7 +362,7 @@ exports.jsToC = function(node) {
   // Serialise all statements
   node.body.body.forEach(function(s, idx) {
     if (idx==0) return; // we know this is the 'compiled' string
-    out(handle(s));    
+    out(handle(s, false/* no result needed*/));    
   });
   out("return 0; // just in case\n");
   setIndent(-1);
