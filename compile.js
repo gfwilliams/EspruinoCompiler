@@ -17,11 +17,11 @@ function getCType(t) {
   return t;
 }
 
-function getField(object, field, wantName) {
-  if (field.type=="Identifier") {
+function getField(object, field, computed, wantName) {
+  if (field.type=="Identifier" && !computed) {
     return callSV("jspGetNamedField", object, JSON.stringify(field.name), wantName ? 1 : 0);
   } else {
-    return callSV("jspGetVarNamedField", object, handleAsJsVar(field), wantName ? 1 : 0);
+    return callSV("jspGetVarNamedField", object, handleAsJsVarSkipName(field), wantName ? 1 : 0);
   }
 }
 
@@ -67,7 +67,7 @@ var nodeHandlers = {
     
     "MemberExpression" : function(node) {
       var obj = handleAsJsVarSkipName(node.object);
-      return getField(obj, node.property, true);
+      return getField(obj, node.property, node.computed, true);
     },    
     
     "BinaryExpression" : function(node) {
@@ -103,7 +103,7 @@ var nodeHandlers = {
       if (node.callee.object != undefined /*&& callee.type == "MemberExpression"*/) {
         var thisVar = getTempVar();
         initCode += "SV "+thisVar+"="+handleAsJsVarSkipName(node.callee.object)+";";
-        var methodVar = getField(thisVar, node.callee.property, false);
+        var methodVar = getField(thisVar, node.callee.property, node.computed, false);
         
         return "({"+initCode+      
                  callSV("jspeFunctionCall",methodVar, 0/*funcName*/, thisVar/*this*/, 0/*isParsing*/, node.arguments.length/*argCount*/, "args"/* argPtr */)+";})";
