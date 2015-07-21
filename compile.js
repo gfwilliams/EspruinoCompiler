@@ -407,6 +407,7 @@ exports.compileFunction = function(node, exportInfo, callback) {
   cflags += "-fno-common -fno-exceptions -fdata-sections -ffunction-sections ";
   cflags += "-flto -fno-fat-lto-objects -Wl,--allow-multiple-definition ";
   cflags += "-fpic -fpie ";
+  cflags += "-fpermissive "; // for (int i=0;...);return i;
   cflags += "-Os ";
   cflags += "-Tinc/linker.ld ";
   
