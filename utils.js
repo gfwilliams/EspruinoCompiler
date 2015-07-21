@@ -64,6 +64,7 @@ exports.getFunctionDecls = function(exports) {
   "jsvSkipName" : "JsVar *(*jsvSkipName)(JsVar *a) = (JsVar *(*)(JsVar *))",
   "jspGetNamedVariable" : "JsVar *(*jspGetNamedVariable)(const char *n) = (JsVar *(*)(const char *))",
   "jspGetNamedField" : "JsVar *(*jspGetNamedField)(JsVar *o, const char *n, bool returnName) = (JsVar *(*)(JsVar *,const char *, bool))",
+  "jspGetVarNamedField" : "JsVar *(*jspGetVarNamedField)(JsVar *object, JsVar *nameVar, bool returnName) = (JsVar *(*)(JsVar *,JsVar *, bool))",
   "jsvGetBool" : "bool (*jsvGetBool)(JsVar *v) = (bool(*)(JsVar *))",
   "jsvGetInteger" : "int (*jsvGetInteger)(JsVar *v) = (int(*)(JsVar *))",
   "jspReplaceWith" : "void (*jspReplaceWith)(JsVar *a, JsVar *b) = (void(*)(JsVar *, JsVar *))",
