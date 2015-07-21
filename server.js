@@ -22,12 +22,26 @@ function compile(js, exports, callback) {
 function handlePost(post, response) {
   console.log("POST ",post);
   if (post.js && post.exports) {
-    compile(post.js, JSON.parse(post.exports), function(code) {
+    try {
+      compile(post.js, JSON.parse(post.exports), function(code) {
+        console.log("----------------------------------------");
+        console.log(code);
+        console.log("----------------------------------------");
+        response.end(code);
+      });
+    } catch (ex) {
+      console.log("===============================================");
+      console.log(post.js);
       console.log("----------------------------------------");
-      console.log(code);
-      console.log("----------------------------------------");
-      response.end(code);
-    });
+      console.log(ex.toString());
+      console.log("===============================================");
+      response.end("console.log("+JSON.stringify(
+          "---------------------------------------------------\n"+
+          "                                 COMPILER MESSAGE\n"+
+          "---------------------------------------------------\n"+
+          ex.toString()+"\n"+
+          "---------------------------------------------------")+")");
+    }
   } else {
     response.end("Unknown command");
   }

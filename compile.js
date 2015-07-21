@@ -26,7 +26,6 @@ function getField(object, field, wantName) {
 }
 
 function isLocal(name) {
-  console.log("IS "+name+" in LOCALS?", locals)
   return name in locals; 
 }
 
@@ -101,7 +100,6 @@ var nodeHandlers = {
       // luckily GCC lets us package a block inside an expression `({...})`
       // otherwise we'd have to do some really strange stuff
       
-      //console.log("CALLEE: "+JSON.stringify(node.callee));
       if (node.callee.object != undefined /*&& callee.type == "MemberExpression"*/) {
         var thisVar = getTempVar();
         initCode += "SV "+thisVar+"="+handleAsJsVarSkipName(node.callee.object)+";";
