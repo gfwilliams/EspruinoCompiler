@@ -21,6 +21,10 @@ public:
     owned = true;
     v=value;
   }
+  inline __attribute__((always_inline)) SV() {
+    owned = false;
+    v=0;
+  }
   inline __attribute__((always_inline)) ~SV() {
     if (owned) jsvUnLock(v);
   }
