@@ -13,6 +13,14 @@ function getCType(t) {
   return t;
 }
 
+function getField(object, field, wantName) {
+  if (field.type=="Identifier") {
+    return callSV("jspGetNamedField", object, JSON.stringify(field.name), wantName ? 1 : 0);
+  } else {
+    return callSV("jspGetVarNamedField", object, handleAsJsVar(field), wantName ? 1 : 0);
+  }
+}
+
 var locals = [];
 function isLocal(name) { return name in locals; }
 
@@ -54,11 +62,7 @@ var nodeHandlers = {
     
     "MemberExpression" : function(node) {
       var obj = handleAsJsVarSkipName(node.object);
-      if (node.property.type=="Identifier") {
-        return callSV("jspGetNamedField", obj, JSON.stringify(node.property.name), 1);
-      } else {
-        return callSV("jspGetVarNamedField", obj, handleAsJsVar(node.property), 1);
-      }
+      return getField(obj, node.property, true);
     },    
     
     "BinaryExpression" : function(node) {
@@ -85,9 +89,25 @@ var nodeHandlers = {
         initCode += "SV "+tv+"="+handleAsJsVar(node)+";";
         return tv;
       });      
+      
       // slightly odd arrangement needed to ensure vars don't unlock until later
-      return "({"+initCode+"JsVar *args["+node.arguments.length+"] = {"+args.join(", ")+"};"+ // thank you GCC!      
-               callSV("jspeFunctionCall",handleAsJsVar(node.callee), 0/*funcName*/, 0/*this*/, 0/*isParsing*/, node.arguments.length/*argCount*/, "args"/* argPtr */)+";})";
+      initCode += "JsVar *args["+node.arguments.length+"] = {"+args.join(", ")+"};";
+      // luckily GCC lets us package a block inside an expression `({...})`
+      // otherwise we'd have to do some really strange stuff
+      
+      //console.log("CALLEE: "+JSON.stringify(node.callee));
+      var thisVar = 0;
+      if (node.callee.object != undefined /*&& callee.type == "MemberExpression"*/) {
+        initCode += "SV thisVar="+handleAsJsVarSkipName(node.callee.object)+";";
+        var methodVar = getField("thisVar", node.callee.property, false);
+        
+        return "({"+initCode+      
+                 callSV("jspeFunctionCall",methodVar, 0/*funcName*/, "thisVar"/*this*/, 0/*isParsing*/, node.arguments.length/*argCount*/, "args"/* argPtr */)+";})";
+      } else {
+        // Simple function call (not method)
+        return "({"+initCode+ 
+        callSV("jspeFunctionCall",handleAsJsVarSkipName(node.callee), 0/*funcName*/, 0/*this*/, 0/*isParsing*/, node.arguments.length/*argCount*/, "args"/* argPtr */)+";})";
+      }
     },       
 
     "ConditionalExpression" : function(node) {
