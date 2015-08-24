@@ -1,3 +1,7 @@
+typedef char int8_t;
+typedef short int16_t;
+typedef int int32_t;
+
 /* very dodgy reference holding implementation, that allows
  us to pass most of the locking/unlocking to GCC.
 

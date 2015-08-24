@@ -89,6 +89,23 @@ function infer(node, forceUndefined) {
       setType(node.test, "bool");
       setType(node, utils.maxType(getType(node.consequent), getType(node.alternate)));
     },    
+    "CallExpression" : function(node) {
+      // handle built-in peek and poke return values. compile.js will then
+      // add the code for these 'inline'
+      if (node.callee.type == "Identifier" && 
+          ["peek8","peek16","peek32"].indexOf(node.callee.name)>=0 &&
+          node.arguments.length==1 &&
+          getType(node.arguments[0])=="int") {
+        setType(node, "int");
+      }
+      if (node.callee.type == "Identifier" && 
+          ["poke8","poke16","poke32"].indexOf(node.callee.name)>=0 &&
+          node.arguments.length==2 &&
+          getType(node.arguments[0])=="int" &&
+          getType(node.arguments[1])=="int") {
+        setType(node, "void");
+      }
+    },
     "IfStatement" : function(node) {
     },
     "WhileStatement" : function(node) {

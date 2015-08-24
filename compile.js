@@ -87,6 +87,25 @@ var nodeHandlers = {
         throw new Error("Unhandled LogicalExpression "+node.operator);            
     },        
     "CallExpression" : function(node) {
+      console.log(JSON.stringify(node,null,2));
+      if (node.varType="int" &&
+          node.callee.type == "Identifier" && 
+          ["peek8","peek16","peek32"].indexOf(node.callee.name)>=0 &&
+          node.arguments.length==1 &&
+          node.arguments[0].varType=="int") {
+        var type = "int"+node.callee.name.substr(4)+"_t";
+        return "(*(volatile "+type+"*)(void*)"+handleAsInt(node.arguments[0])+")";
+      }
+      if (node.varType="int" &&
+          node.callee.type == "Identifier" && 
+          ["poke8","poke16","poke32"].indexOf(node.callee.name)>=0 &&
+          node.arguments.length==2 &&
+          node.arguments[0].varType=="int" &&
+          node.arguments[1].varType=="int") {
+        var type = "int"+node.callee.name.substr(4)+"_t";
+        return "((*(volatile "+type+"*)(void*)"+handleAsInt(node.arguments[0])+") = ("+handleAsInt(node.arguments[1])+"))";
+      }
+
       // TODO: check for simple peek and poke, and implement them directly
       var initCode = "";
       var args = node.arguments.map(function(node) {
