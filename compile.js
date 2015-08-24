@@ -87,7 +87,6 @@ var nodeHandlers = {
         throw new Error("Unhandled LogicalExpression "+node.operator);            
     },        
     "CallExpression" : function(node) {
-      console.log(JSON.stringify(node,null,2));
       if (node.varType="int" &&
           node.callee.type == "Identifier" && 
           ["peek8","peek16","peek32"].indexOf(node.callee.name)>=0 &&
