@@ -60,6 +60,7 @@ exports.getFunctionDecls = function(exports) {
   "jsvNewFromString" : "JsVar *(*jsvNewFromString)(const char *s) = (JsVar *(*)(const char *))",
   "jsvNewFromInteger" : "JsVar *(*jsvNewFromInteger)(int i) = (JsVar *(*)(int))",
   "jsvNewFromFloat" : "JsVar *(*jsvNewFromFloat)(double d) = (JsVar *(*)(double))",
+  "jsvNewFromBool" : "JsVar *(*jsvNewFromBool)(bool b) = (JsVar *(*)(bool))",
   "jsvMathsOp" : "JsVar *(*jsvMathsOp)(JsVar *a, JsVar *b, int op) = (JsVar *(*)(JsVar *,JsVar*,int))",
   "jsvSkipName" : "JsVar *(*jsvSkipName)(JsVar *a) = (JsVar *(*)(JsVar *))",
   "jspGetNamedVariable" : "JsVar *(*jspGetNamedVariable)(const char *n) = (JsVar *(*)(const char *))",
