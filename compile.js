@@ -84,7 +84,7 @@ var nodeHandlers = {
       if (getType(node)=="bool") {
         return handleAsBool(node.left) + " " + node.operator + " " + handleAsBool(node.right);
       } else
-        throw new Error("Unhandled LogicalExpression "+node.operator);            
+        throw new Error("Unhandled non-boolean LogicalExpression "+node.operator);            
     },        
     "CallExpression" : function(node) {
       if (node.varType="int" &&
