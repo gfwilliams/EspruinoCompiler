@@ -73,7 +73,7 @@ var nodeHandlers = {
     "BinaryExpression" : function(node) {
       if ((getType(node.left)=="int" || getType(node.left)=="bool") &&
           (getType(node.right)=="int" || getType(node.right)=="bool")) {        
-        return handleAsInt(node.left) + " " + node.operator + " " + handleAsInt(node.right);
+        return "(" + handleAsInt(node.left) + " " + node.operator + " " + handleAsInt(node.right) + ")";
       } else {
         return convertJsVarToType(
             callSV("jsvMathsOp",handleAsJsVarSkipName(node.left),handleAsJsVarSkipName(node.right),utils.getMathsOpOperator(node.operator)),
@@ -82,7 +82,7 @@ var nodeHandlers = {
     },    
     "LogicalExpression" : function(node) {
       if (getType(node)=="bool") {
-        return handleAsBool(node.left) + " " + node.operator + " " + handleAsBool(node.right);
+        return "(" + handleAsBool(node.left) + " " + node.operator + " " + handleAsBool(node.right) + ")";
       } else
         throw new Error("Unhandled non-boolean LogicalExpression "+node.operator);            
     },        
@@ -100,7 +100,7 @@ var nodeHandlers = {
           ["poke8","poke16","poke32"].indexOf(node.callee.name)>=0 &&
           node.arguments.length==2 &&
           node.arguments[0].varType=="int" &&
-          node.arguments[1].varType=="int") {
+          ["int","bool"].indexOf(getType(node.arguments[1]))>=0) {
         var type = "int"+node.callee.name.substr(4)+"_t";
         return "((*(volatile "+type+"*)(void*)"+handleAsInt(node.arguments[0])+") = ("+handleAsInt(node.arguments[1])+"))";
       }
@@ -134,7 +134,7 @@ var nodeHandlers = {
 
     "ConditionalExpression" : function(node) {
       var t = getType(node);
-      return handleAsBool(node.test)+"?"+handleAsType(node.consequent,t)+":"+handleAsType(node.alternate,t);
+      return "("+handleAsBool(node.test)+"?"+handleAsType(node.consequent,t)+":"+handleAsType(node.alternate,t)+")";
     },
     "AssignmentExpression" : function(node, needsResult) {
       if (getType(node.left)=="JsVar") {

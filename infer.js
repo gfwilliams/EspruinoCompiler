@@ -102,7 +102,7 @@ function infer(node, forceUndefined) {
           ["poke8","poke16","poke32"].indexOf(node.callee.name)>=0 &&
           node.arguments.length==2 &&
           getType(node.arguments[0])=="int" &&
-          getType(node.arguments[1])=="int") {
+          ["int","bool"].indexOf(getType(node.arguments[1]))>=0) {
         setType(node, "void");
       }
     },
