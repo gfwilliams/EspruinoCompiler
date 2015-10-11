@@ -69,7 +69,21 @@ var nodeHandlers = {
       var obj = handleAsJsVarSkipName(node.object);
       return getField(obj, node.property, node.computed, true);
     },    
-    
+    "UnaryExpression" : function(node) {
+      if (node.operator=="!") {
+        return "!"+handleAsBool(node.argument);
+      } else if (node.operator=="-" || node.operator=="+") {
+        var expr = {
+              type : "BinaryExpression",
+              operator : node.operator,
+              left : { type : "Literal", value : 0, varType : "int" },
+              right : node.argument,
+        };
+        return handleAsJsVar(expr);
+      } else {
+        throw new Error("Only '!', '-', and '+' are implemented as a unary expression");
+      }
+    },        
     "BinaryExpression" : function(node) {
       if ((getType(node.left)=="int" || getType(node.left)=="bool") &&
           (getType(node.right)=="int" || getType(node.right)=="bool")) {        

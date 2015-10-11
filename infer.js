@@ -69,6 +69,15 @@ function infer(node, forceUndefined) {
       else if (utils.isBool(node.value)) setType(node, "bool");
       else setType(node, "JsVar");
     },
+    "UnaryExpression" : function(node) {
+      if (node.operator == "!") {
+        node.isNotAName = true;
+        setType(node, "bool");
+      } else if (node.operator == "+" || node.operator == "-") {        
+        node.isNotAName = true;
+        if (getType(node.argument)=="int") setType(node, "int");
+      }
+    },    
     "BinaryExpression" : function(node) {
       node.isNotAName = true;
       var boolExprs = ["==","===","!=","!==","<","<=",">",">="];
