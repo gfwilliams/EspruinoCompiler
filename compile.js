@@ -29,6 +29,10 @@ function isLocal(name) {
   return name in locals;
 }
 
+function isNodeZero(node) {
+  return node.type=="Literal" && node.value==0;
+}
+
 var nodeHandlers = {
 
     "Literal" : function(node) {
@@ -87,6 +91,12 @@ var nodeHandlers = {
       }
     },
     "BinaryExpression" : function(node) {
+      // These 2 nodes have no effect with one argument as 0 - optimise
+      if (["|","^"].indexOf(node.operator)>=0) {
+        if (isNodeZero(node.left)) return handleAsInt(node.right);
+        if (isNodeZero(node.right)) return handleAsInt(node.left);
+      }
+      // otherwise do the full expr
       if ((getType(node.left)=="int" || getType(node.left)=="bool") &&
           (getType(node.right)=="int" || getType(node.right)=="bool")) {
         return "(" + handleAsInt(node.left) + " " + node.operator + " " + handleAsInt(node.right) + ")";
