@@ -133,7 +133,7 @@ var nodeHandlers = {
       var initCode = "";
       var args = node.arguments.map(function(node) {
         var tv = getTempVar();
-        initCode += "SV "+tv+"="+handleAsJsVar(node)+";";
+        initCode += "SV "+tv+"="+handleAsJsVarSkipName(node)+";";
         return tv;
       });
 
