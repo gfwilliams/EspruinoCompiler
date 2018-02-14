@@ -24,16 +24,16 @@ exports.maxType = function(a,b) {
 exports.getMathsOpOperator = function(op) {
   if (op.length==1) return "'"+op+"'";
   // see jsutils.h
-  if (op=="==") return 261; // LEX_EQUAL
-  if (op=="===") return 262; // LEX_TYPEEQUALL
-  if (op=="!=") return 263; // LEX_NEQUAL
-  if (op=="!==") return 264; // LEX_NTYPEEQUAL
-  if (op=="<=") return 265; // LEX_LEQUAL
-  if (op=="<<") return 266; // LEX_LSHIFT
+  if (op=="==") return 138; // LEX_EQUAL
+  if (op=="===") return 139; // LEX_TYPEEQUALL
+  if (op=="!=") return 140; // LEX_NEQUAL
+  if (op=="!==") return 141; // LEX_NTYPEEQUAL
+  if (op=="<=") return 142; // LEX_LEQUAL
+  if (op=="<<") return 143; // LEX_LSHIFT
   // LEX_LSHIFTEQUAL
-  if (op==">=") return 268; //LEX_GEQUAL
-  if (op==">>") return 269; // LEX_RSHIFT
-  if (op==">>>") return 270; // LEX_RSHIFTUNSIGNED
+  if (op==">=") return 145; //LEX_GEQUAL
+  if (op==">>") return 146; // LEX_RSHIFT
+  if (op==">>>") return 147; // LEX_RSHIFTUNSIGNED
   // LEX_RSHIFTEQUAL
   // LEX_RSHIFTUNSIGNEDEQUAL
   // LEX_PLUSEQUAL
@@ -44,9 +44,9 @@ exports.getMathsOpOperator = function(op) {
   // LEX_DIVEQUAL
   // LEX_MODEQUAL
   // LEX_ANDEQUAL
-  if (op=="&&") return 281; // LEX_ANDAND
+  if (op=="&&") return 158; // LEX_ANDAND
   // LEX_OREQUAL
-  if (op=="||") return 283; // LEX_OROR
+  if (op=="||") return 160; // LEX_OROR
   // LEX_XOREQUAL
   throw new Error("Unknown op '"+op+"'");
 };
