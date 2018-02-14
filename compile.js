@@ -395,7 +395,7 @@ exports.jsToC = function(node) {
   // Now output
   out('extern "C" {\n');
   setIndent(1);
-  var functionName = "myFunction";
+  var functionName = "entryPoint";
   var cArgSpec = "JsVar *"+functionName+"("+params.join(", ")+")";
   out(cArgSpec + " {\n");
   setIndent(1);
@@ -419,15 +419,7 @@ exports.jsToC = function(node) {
   };
 };
 
-exports.compileFunction = function(node, exportInfo, callback) {
-  var compiled = exports.jsToC(node);
-  var code = utils.getFunctionDecls(exportInfo);
-  code += compiled.code;
-
-  console.log("----------------------------------------");
-  console.log(code);
-  console.log("----------------------------------------");
-
+function gcc(code, callback) {
   var crypto = require('crypto');
   var filename = "out"+crypto.randomBytes(4).readUInt32LE(0);
 
@@ -450,16 +442,18 @@ exports.compileFunction = function(node, exportInfo, callback) {
   cflags += "-flto -fno-fat-lto-objects -Wl,--allow-multiple-definition ";
   cflags += "-fpic -fpie ";
   cflags += "-fpermissive "; // for (int i=0;...);return i;
+  cflags += "-fpreprocessed "; // disable preprocessing
   cflags += "-Os ";
   cflags += "-Tinc/linker.ld ";
 
   exec("arm-none-eabi-gcc "+cflags+" "+filename+".cpp -o "+filename+".elf", function (error, stdout, stderr) {
-    require("fs").unlink(filename+".cpp");
+    require("fs").unlinkSync(filename+".cpp");
     if (stdout) sys.print('gcc stdout: ' + stdout+"\n");
     if (stderr) sys.print('gcc stderr: ' + stderr+"\n");
     if (error !== null) {
       console.warn('exec error: ' + error);
-      callback();
+      var e = error.toString();
+      callback(e.substr(e.indexOf("\n")+1));
     } else {
       // -x = symbol table
       // -D = all sections
@@ -470,17 +464,74 @@ exports.compileFunction = function(node, exportInfo, callback) {
       exec("arm-none-eabi-objcopy -O binary "+filename+".elf "+filename+".bin", function (error, stdout, stderr) {
         if (stdout) sys.print('objcopy stdout: ' + stdout+"\n");
         if (stderr) sys.print('objcopy stderr: ' + stderr+"\n");
-        var b64 = require("fs").readFileSync(filename+".bin").toString('base64');
-        require("fs").unlink(filename+".bin");
-        require("fs").unlink(filename+".elf");
-        var func = "E.nativeCall(1, "+JSON.stringify(compiled.jsArgSpec)+", atob("+JSON.stringify(b64)+"))";
+        var bin = require("fs").readFileSync(filename+".bin");
+        require("fs").unlinkSync(filename+".bin");
+        require("fs").unlinkSync(filename+".elf");
 
-        callback("var "+node.id.name+" = "+func+";");
+        callback(null, { binary : bin });
       });
     }
   });
 
-
-
   return cCode;
+};
+
+exports.compileCFunction = function(code, exportInfo, callback) {
+  // handle entrypoints
+  var entryPoints = [];
+  var entrySpecs = [];
+  var lines = code.trim().split("\n");
+  for (var i=0;i<lines.length;i++) {
+    var l = lines[i].trim();
+    if (l.substr(0,2)!="//") break;
+    var match = /\/\/\s*(\w+)\s+(\w+)\(([^)]*)\)/.exec(l);
+    if (match===null) throw new Error(JSON.stringify(l.substr(2).trim())+" isn't a valid argspec")
+    entryPoints.push(match[2]);
+    entrySpecs.push(match[1]+"("+match[3]+")");
+  }
+
+  // add all our built-in functions
+  code = utils.getFunctionDecls(exportInfo) + code;
+  // add exports
+  code += "\nextern \"C\" { void *entryPoint[]  __attribute__ ((section (\".text\"))) = {(void*)"+entryPoints.join(",(void*)")+"};}";
+
+  console.log("----------------------------------------");
+  console.log(code);
+  console.log("----------------------------------------");
+
+  gcc(code, function(err, result) {
+    if (err) return callback(err);
+    var offset = entryPoints.length*4;
+    var binary = result.binary.slice(offset);
+    var id = "id"+(0|(Math.random()*1576858));
+    var src = "(function(){\n";
+    src += "  var bin=atob("+JSON.stringify(binary.toString('base64'))+");\n";
+    src += "  return {\n";
+    for (var i=0;i<entryPoints.length;i++) {
+      var addr = result.binary.readInt32LE(i*4) - offset;
+      src += "    "+entryPoints[i]+":E.nativeCall("+addr+", "+JSON.stringify(entrySpecs[i])+", bin),\n";
+    }
+    src += "  };\n";
+    src += "})()";
+    callback(null,src);
+  });
+  return code;
+}
+
+exports.compileFunction = function(node, exportInfo, callback) {
+  var compiled = exports.jsToC(node);
+
+  console.log("----------------------------------------");
+  console.log(code);
+  console.log("----------------------------------------");  
+  // add all our built-in functions
+  var code = utils.getFunctionDecls(exportInfo) + compiled.code;
+
+  gcc(code, function(err, result) {
+    if (err) return callback(err);
+    var str = "atob("+JSON.stringify(result.binary.toString('base64'))+")";
+    var func = "E.nativeCall(1, "+JSON.stringify(compiled.jsArgSpec)+", "+str+")";
+    callback(null,"var "+node.id.name+" = "+func+";");
+  });
+  return code;
 };

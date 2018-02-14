@@ -2,28 +2,52 @@
 var acorn = require("acorn");
 var qs = require('querystring');
 compileFunction = require("./compile.js").compileFunction;
+compileCFunction = require("./compile.js").compileCFunction;
 
-function compile(js, exports, callback) {
+function compile_js(js, exports, callback) {
   var ast = acorn.parse(js, { ecmaVersion : 6 });
   console.log(ast);
   var node = ast.body[0];
-  if (node.type=="FunctionDeclaration" && 
+  if (node.type=="FunctionDeclaration" &&
       node.body.type=="BlockStatement" &&
       node.body.body.length>0 &&
       node.body.body[0].type=="ExpressionStatement" &&
-      node.body.body[0].expression.type=="Literal" && 
+      node.body.body[0].expression.type=="Literal" &&
       node.body.body[0].expression.value=="compiled") {
-    compileFunction(node, exports, callback);      
+    compileFunction(node, exports, callback);
   } else {
     throw new Error("Not Valid code");
   }
 }
 
+function respondWithCompilerMessage(response, message) {
+  response.end("console.log("+JSON.stringify(
+      "---------------------------------------------------\n"+
+      "                                 COMPILER MESSAGE\n"+
+      "---------------------------------------------------\n"+
+      message+"\n"+
+      "---------------------------------------------------")+")");
+}
+
 function handlePost(post, response) {
   console.log("POST ",post);
-  if (post.js && post.exports) {
+  var exports;
+  if (post.exptr) {
+    exports = parseInt(post.exptr);
+  } else {
     try {
-      compile(post.js, JSON.parse(post.exports), function(code) {
+      exports = JSON.parse(post.exports);
+    } catch (ex) {
+      respondWithCompilerMessage(response, "Unable to parse EXPORTS");
+      return;
+    }
+  }
+
+
+  if (post.js) {
+    try {
+      compile_js(post.js, exports, function(err, code) {
+        if (err) return respondWithCompilerMessage(response,err);
         console.log("----------------------------------------");
         console.log(code);
         console.log("----------------------------------------");
@@ -33,17 +57,31 @@ function handlePost(post, response) {
       console.log("===============================================");
       console.log(post.js);
       console.log("----------------------------------------");
-      console.log(ex.toString());
+      if ("object"==typeof ex && ex.stack)console.log(ex.stack);
+      else console.log(ex.toString());
       console.log("===============================================");
-      response.end("console.log("+JSON.stringify(
-          "---------------------------------------------------\n"+
-          "                                 COMPILER MESSAGE\n"+
-          "---------------------------------------------------\n"+
-          ex.toString()+"\n"+
-          "---------------------------------------------------")+")");
+      respondWithCompilerMessage(response, ex.toString());
+    }
+  } else if (post.c) {
+    try {
+      compileCFunction(post.c, exports, function(err, code) {
+        if (err) return respondWithCompilerMessage(response,err);
+        console.log("----------------------------------------");
+        console.log(code);
+        console.log("----------------------------------------");
+        response.end(code);
+      });
+    } catch (ex) {
+      console.log("===============================================");
+      console.log(post.c);
+      console.log("----------------------------------------");
+      if ("object"==typeof ex && ex.stack)console.log(ex.stack);
+      else console.log(ex.toString());
+      console.log("===============================================");
+      respondWithCompilerMessage(response, ex.toString());
     }
   } else {
-    response.end("Unknown command");
+    respondWithCompilerMessage(response, "Unknown compilation arguments");
   }
 }
 
@@ -61,8 +99,8 @@ var server = require("http").createServer(function (request, response) {
       var post = qs.parse(body);
       handlePost(post, response);
     });
-    
-    
+
+
   } else {
     response.end("Espruino compilation server");
   }

@@ -1,8 +1,8 @@
-ENTRY(myFunction)
+ENTRY(entryPoint)
 
 MEMORY
 {
-  RAM (xrw)       : ORIGIN = 0, LENGTH = 20K
+  RAM (xrw)       : ORIGIN = 0, LENGTH = 100K
 }
 
 SECTIONS
@@ -11,7 +11,7 @@ SECTIONS
   .text :
   {
     . = ALIGN(4);
-    *(.myFunction)
+    *(.entryPoint)
     *(.text)
     *(.text*)
     *(.rodata)
@@ -25,7 +25,7 @@ SECTIONS
     *(.data)           /* .data sections */
     *(.data*)          /* .data* sections */
   } >RAM
-  
+
   .bss :
   {
     /* This is used by the startup in order to initialize the .bss secion */
@@ -34,7 +34,7 @@ SECTIONS
     *(COMMON)
     . = ALIGN(4);
   } >RAM
-  
+
   /* Remove stuff we don't want */
   /DISCARD/ :
   {
@@ -43,5 +43,5 @@ SECTIONS
     libgcc.a ( * )
     *(.ARM.*)
     *(.comment)
-  }  
+  }
 }
