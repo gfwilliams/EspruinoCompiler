@@ -31,6 +31,7 @@ function respondWithCompilerMessage(response, message) {
 
 function handlePost(post, response) {
   console.log("POST ",post);
+
   var exports;
   if (post.exptr) {
     exports = parseInt(post.exptr);
@@ -89,11 +90,11 @@ var server = require("http").createServer(function (request, response) {
   if (request.method=="POST") {
     var body = '';
     request.on('data', function (data) {
-        body += data;
+      body += data;
 
-        // Too much POST data, kill the connection!
-        if (body.length > 1e6)
-            request.connection.destroy();
+      // Too much POST data, kill the connection!
+      if (body.length > 1e6)
+          request.connection.destroy();
     });
     request.on('end', function () {
       var post = qs.parse(body);
