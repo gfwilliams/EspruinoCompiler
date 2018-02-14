@@ -7,11 +7,16 @@ MEMORY
 
 SECTIONS
 {
-  /* Then code, then constants */
-  .text :
+  .entrypoint :
   {
     . = ALIGN(4);
     *(.entryPoint)
+  }
+  /* Then code, then constants */
+
+  .text :
+  {
+    . = ALIGN(4);
     *(.text)
     *(.text*)
     *(.rodata)

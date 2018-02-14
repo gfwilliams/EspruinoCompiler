@@ -97,7 +97,8 @@ var nodeHandlers = {
         if (isNodeZero(node.right)) return handleAsInt(node.left);
       }
       // otherwise do the full expr
-      if ((getType(node.left)=="int" || getType(node.left)=="bool") &&
+      if ((getType(node)=="int" || getType(node)=="bool") &&
+          (getType(node.left)=="int" || getType(node.left)=="bool") &&
           (getType(node.right)=="int" || getType(node.right)=="bool")) {
         return "(" + handleAsInt(node.left) + " " + node.operator + " " + handleAsInt(node.right) + ")";
       } else {
@@ -396,7 +397,7 @@ exports.jsToC = function(node) {
   out('extern "C" {\n');
   setIndent(1);
   var functionName = "entryPoint";
-  var cArgSpec = "JsVar *"+functionName+"("+params.join(", ")+")";
+  var cArgSpec = "__attribute__ ((section (\".entrypoint\"))) JsVar *"+functionName+"("+params.join(", ")+")";
   out(cArgSpec + " {\n");
   setIndent(1);
   // Serialise all statements
@@ -493,7 +494,7 @@ exports.compileCFunction = function(code, exportInfo, callback) {
   // add all our built-in functions
   code = utils.getFunctionDecls(exportInfo) + code;
   // add exports
-  code += "\nextern \"C\" { void *entryPoint[]  __attribute__ ((section (\".text\"))) = {(void*)"+entryPoints.join(",(void*)")+"};}";
+  code += "\nextern \"C\" { void *entryPoint[]  __attribute__ ((section (\".entrypoint\"))) = {(void*)"+entryPoints.join(",(void*)")+"};}";
 
   console.log("----------------------------------------");
   console.log(code);
@@ -522,8 +523,8 @@ exports.compileFunction = function(node, exportInfo, callback) {
   var compiled = exports.jsToC(node);
 
   console.log("----------------------------------------");
-  console.log(code);
-  console.log("----------------------------------------");  
+  console.log(compiled.code);
+  console.log("----------------------------------------");
   // add all our built-in functions
   var code = utils.getFunctionDecls(exportInfo) + compiled.code;
 

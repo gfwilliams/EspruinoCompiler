@@ -114,21 +114,22 @@ int  jsvGetInteger(JsVar *v) {
 bool  jsvGetBool(JsVar *v) {
   return ( (bool(*)(JsVar *))EXPTR[11])(v);
 }
-JsVar * jspGetNamedVariable(const char *n) {
-  return ( (JsVar *(*)(const char *))EXPTR[12])(n);
-}
-JsVar * jspGetNamedField(JsVar *o, const char *n, bool returnName) {
-  return ( (JsVar *(*)(JsVar *,const char *, bool))EXPTR[13])(o,n,returnName);
-}
-JsVar * jspGetVarNamedField(JsVar *object, JsVar *nameVar, bool returnName) {
-  return ( (JsVar *(*)(JsVar *,JsVar *, bool))EXPTR[14])(object,nameVar,returnName);
-}
 void  jspReplaceWith(JsVar *a, JsVar *b) {
-  return ( (void(*)(JsVar *, JsVar *))EXPTR[15])(a,b);
+  return ( (void(*)(JsVar *, JsVar *))EXPTR[12])(a,b);
 }
 JsVar * jspeFunctionCall(JsVar *function, JsVar *functionName, JsVar *thisArg, bool isParsing, int argCount, JsVar **argPtr) {
-  return ( (JsVar *(*)(JsVar *, JsVar *, JsVar *, bool, int, JsVar **))EXPTR[16])(function,functionName,thisArg,isParsing,argCount,argPtr);
+  return ( (JsVar *(*)(JsVar *, JsVar *, JsVar *, bool, int, JsVar **))EXPTR[13])(function,functionName,thisArg,isParsing,argCount,argPtr);
 }
+JsVar * jspGetNamedVariable(const char *n) {
+  return ( (JsVar *(*)(const char *))EXPTR[14])(n);
+}
+JsVar * jspGetNamedField(JsVar *o, const char *n, bool returnName) {
+  return ( (JsVar *(*)(JsVar *,const char *, bool))EXPTR[15])(o,n,returnName);
+}
+JsVar * jspGetVarNamedField(JsVar *object, JsVar *nameVar, bool returnName) {
+  return ( (JsVar *(*)(JsVar *,JsVar *, bool))EXPTR[16])(object,nameVar,returnName);
+}
+
 `;
     /*var n = 0; // this mostly generates the above, apart from arg names
     for (var name in funcDecls) {
