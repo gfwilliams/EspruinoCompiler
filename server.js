@@ -32,6 +32,14 @@ function respondWithCompilerMessage(response, message) {
 function handlePost(post, response) {
   console.log("POST ",post);
 
+  var SUPPORTED_BOARDS = [
+    "ESPRUINOBOARD","PICO_R1_3","ESPRUINOWIFI",
+    "PUCKJS","PIXLJS","WIO_LTE","THINGY52","NRF52832DK"
+  ];
+  if (post.board && SUPPORTED_BOARDS.indexOf(post.board)==-1) {
+    respondWithCompilerMessage(response, "Only offical Espruino boards are supported by the Compiler Service");
+  }
+
   var exports;
   if (post.exptr) {
     exports = parseInt(post.exptr);
