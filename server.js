@@ -34,8 +34,8 @@ function handlePost(post, response) {
 
   var SUPPORTED_BOARDS = [
     "ESPRUINOBOARD","PICO_R1_3","ESPRUINOWIFI",
-    "PUCKJS","PIXLJS","WIO_LTE","THINGY52","NRF52832DK",
-    "STM32L496GDISCOVERY"
+    "PUCKJS","PIXLJS","MDBT42Q","WIO_LTE","THINGY52","NRF52832DK",
+    "STM32L496GDISCOVERY","RAK8211","RAK8212","RUUVITAG"
   ];
   if (post.board && SUPPORTED_BOARDS.indexOf(post.board)==-1) {
     respondWithCompilerMessage(response, "Only offical Espruino boards are supported by the Compiler Service");
