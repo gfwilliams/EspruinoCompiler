@@ -9,7 +9,8 @@ cd `dirname $0`
 
 RUNNING=1
 while [ $RUNNING ]; do
-  node server.js
+  rm -f *.elf *.cpp
+  nodejs server.js
   echo -------------------------------------------
   echo Server stopped - restarting...
   echo -------------------------------------------

@@ -1,5 +1,5 @@
 {
   "dependencies": {
-    "acorn": "^1.0.3"
+    "acorn": "^1.2.2"
   }
 }
