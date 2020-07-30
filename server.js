@@ -31,6 +31,7 @@ function respondWithCompilerMessage(response, message) {
 
 function handlePost(post, response) {
   console.log("POST ",post);
+  response.setHeader("Access-Control-Allow-Origin", "*");
 
   var SUPPORTED_BOARDS = [
     "ESPRUINOBOARD","PICO_R1_3","ESPRUINOWIFI","BANGLEJS",
