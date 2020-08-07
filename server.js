@@ -1,10 +1,11 @@
 // Simple webserver that takes requests for compilation and sends back the result
 var acorn = require("acorn");
 var qs = require('querystring');
+var utils = require("./utils.js");
 compileFunction = require("./compile.js").compileFunction;
 compileCFunction = require("./compile.js").compileCFunction;
 
-function compile_js(js, exports, callback) {
+function compile_js(js, options, callback) {
   var ast = acorn.parse(js, { ecmaVersion : 6 });
   console.log(ast);
   var node = ast.body[0];
@@ -14,7 +15,7 @@ function compile_js(js, exports, callback) {
       node.body.body[0].type=="ExpressionStatement" &&
       node.body.body[0].expression.type=="Literal" &&
       node.body.body[0].expression.value=="compiled") {
-    compileFunction(node, exports, callback);
+    compileFunction(node, options, callback);
   } else {
     throw new Error("Not Valid code");
   }
@@ -33,14 +34,11 @@ function handlePost(post, response) {
   console.log("POST ",post);
   response.setHeader("Access-Control-Allow-Origin", "*");
 
-  var SUPPORTED_BOARDS = [
-    "ESPRUINOBOARD","PICO_R1_3","ESPRUINOWIFI","BANGLEJS",
-    "PUCKJS","PIXLJS","MDBT42Q","WIO_LTE","THINGY52","NRF52832DK","NRF52840DK",
-    "STM32L496GDISCOVERY","RAK8211","RAK8212","RUUVITAG"
-  ];
-  if (post.board && SUPPORTED_BOARDS.indexOf(post.board)==-1) {
-    respondWithCompilerMessage(response, "Only offical Espruino boards are supported by the Compiler Service");
-  }
+  var boardInfo;
+  if (post.board)
+    boardInfo = utils.SUPPORTED_BOARDS[post.board];
+  if (boardInfo===undefined)
+    return respondWithCompilerMessage(response, "Only offical Espruino boards are supported by the Compiler Service");
 
   var exports;
   if (post.exptr) {
@@ -54,10 +52,15 @@ function handlePost(post, response) {
     }
   }
 
+  var options = {
+    exports : exports,
+    board : post.board,
+    boardInfo : boardInfo
+  };
 
   if (post.js) {
     try {
-      compile_js(post.js, exports, function(err, code) {
+      compile_js(post.js, options, function(err, code) {
         if (err) return respondWithCompilerMessage(response,err);
         console.log("----------------------------------------");
         console.log(code);
@@ -75,7 +78,7 @@ function handlePost(post, response) {
     }
   } else if (post.c) {
     try {
-      compileCFunction(post.c, exports, function(err, code) {
+      compileCFunction(post.c, options, function(err, code) {
         if (err) return respondWithCompilerMessage(response,err);
         console.log("----------------------------------------");
         console.log(code);

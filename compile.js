@@ -420,7 +420,7 @@ exports.jsToC = function(node) {
   };
 };
 
-function gcc(code, callback) {
+function gcc(code, options, callback) {
   var crypto = require('crypto');
   var filename = "out"+crypto.randomBytes(4).readUInt32LE(0);
 
@@ -437,7 +437,17 @@ function gcc(code, callback) {
 
 
 
-  var cflags =  "-mlittle-endian -mthumb -mcpu=cortex-m3  -mfix-cortex-m3-ldrd  -mthumb-interwork -mfloat-abi=soft ";
+  var cflags =  "-mlittle-endian -mthumb  -mthumb-interwork ";
+  switch (options.boardInfo.cpu) {
+    case "cortexm3" : cflags += "-mcpu=cortex-m3  -mfix-cortex-m3-ldrd "; break;
+    case "cortexm4" : cflags += "-mcpu=cortex-m4 "; break;
+    default:
+    console.warn('Unknown CPU! ' + options.boardInfo.cpu);
+  }
+  if (options.boardInfo.nrf52) // on nRF52 use hardware floating point unit
+    cflags += "-mfloat-abi=softfp -mfpu=fpv4-sp-d16 -fsingle-precision-constant -Wdouble-promotion -Wfloat-conversion ";
+  else
+    cflags += "-mfloat-abi=soft ";
   cflags += "-nostdinc -nostdlib ";
   cflags += "-fno-common -fno-exceptions -fdata-sections -ffunction-sections ";
   cflags += "-flto -fno-fat-lto-objects -Wl,--allow-multiple-definition ";
@@ -449,8 +459,8 @@ function gcc(code, callback) {
 
   exec("arm-none-eabi-gcc "+cflags+" "+filename+".cpp -o "+filename+".elf", function (error, stdout, stderr) {
     require("fs").unlinkSync(filename+".cpp");
-    if (stdout) sys.print('gcc stdout: ' + stdout+"\n");
-    if (stderr) sys.print('gcc stderr: ' + stderr+"\n");
+    if (stdout) console.log('gcc stdout: ' + stdout+"\n");
+    if (stderr) console.log('gcc stderr: ' + stderr+"\n");
     if (error !== null) {
       console.warn('exec error: ' + error);
       var e = error.toString();
@@ -459,12 +469,12 @@ function gcc(code, callback) {
       // -x = symbol table
       // -D = all sections
       exec("arm-none-eabi-objdump -S -D "+filename+".elf", function (error, stdout, stderr) {
-        if (stdout) sys.print('objdump stdout: ' + stdout+"\n");
-        if (stderr) sys.print('objdump stderr: ' + stderr+"\n");
+        if (stdout) console.log('objdump stdout: ' + stdout+"\n");
+        if (stderr) console.log('objdump stderr: ' + stderr+"\n");
       });
       exec("arm-none-eabi-objcopy -O binary "+filename+".elf "+filename+".bin", function (error, stdout, stderr) {
-        if (stdout) sys.print('objcopy stdout: ' + stdout+"\n");
-        if (stderr) sys.print('objcopy stderr: ' + stderr+"\n");
+        if (stdout) console.log('objcopy stdout: ' + stdout+"\n");
+        if (stderr) console.log('objcopy stderr: ' + stderr+"\n");
         var bin = require("fs").readFileSync(filename+".bin");
         require("fs").unlinkSync(filename+".bin");
         require("fs").unlinkSync(filename+".elf");
@@ -477,7 +487,7 @@ function gcc(code, callback) {
   return cCode;
 };
 
-exports.compileCFunction = function(code, exportInfo, callback) {
+exports.compileCFunction = function(code, options, callback) {
   // handle entrypoints
   var entryPoints = [];
   var entrySpecs = [];
@@ -492,7 +502,7 @@ exports.compileCFunction = function(code, exportInfo, callback) {
   }
 
   // add all our built-in functions
-  code = utils.getFunctionDecls(exportInfo) + code;
+  code = utils.getFunctionDecls(options.exports) + code;
   // add exports
   code += "\nextern \"C\" { void *entryPoint[]  __attribute__ ((section (\".entrypoint\"))) = {(void*)"+entryPoints.join(",(void*)")+"};}";
 
@@ -500,7 +510,7 @@ exports.compileCFunction = function(code, exportInfo, callback) {
   console.log(code);
   console.log("----------------------------------------");
 
-  gcc(code, function(err, result) {
+  gcc(code, options, function(err, result) {
     if (err) return callback(err);
     var offset = entryPoints.length*4;
     var binary = result.binary.slice(offset);
@@ -519,16 +529,16 @@ exports.compileCFunction = function(code, exportInfo, callback) {
   return code;
 }
 
-exports.compileFunction = function(node, exportInfo, callback) {
+exports.compileFunction = function(node, options, callback) {
   var compiled = exports.jsToC(node);
 
   console.log("----------------------------------------");
   console.log(compiled.code);
   console.log("----------------------------------------");
   // add all our built-in functions
-  var code = utils.getFunctionDecls(exportInfo) + compiled.code;
+  var code = utils.getFunctionDecls(options.exports) + compiled.code;
 
-  gcc(code, function(err, result) {
+  gcc(code, options, function(err, result) {
     if (err) return callback(err);
     var str = "atob("+JSON.stringify(result.binary.toString('base64'))+")";
     var func = "E.nativeCall(1, "+JSON.stringify(compiled.jsArgSpec)+", "+str+")";
