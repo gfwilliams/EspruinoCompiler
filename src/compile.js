@@ -422,16 +422,15 @@ exports.jsToC = function(node) {
 
 function gcc(code, options, callback) {
   var crypto = require('crypto');
-  var filename = "out"+crypto.randomBytes(4).readUInt32LE(0);
+  var filename = "tmp/out"+crypto.randomBytes(4).readUInt32LE(0);
 
   // save to file
   require("fs").writeFileSync(filename+".cpp", code);
   // now run gcc
-  var sys = require('sys');
   var exec = require('child_process').exec;
   /*child = exec("gcc "+filename+".cpp  -fno-exceptions -m32 -o "+filename+"", function (error, stdout, stderr) {
-    sys.print('stdout: ' + stdout);
-    sys.print('stderr: ' + stderr);
+    console.log('stdout: ' + stdout);
+    console.log('stderr: ' + stderr);
     //if (error !== null) console.warn('exec error: ' + error);
   });*/
 

@@ -13,12 +13,12 @@ This project does the following:
 Files
 -----
 
-* `utils.js` - general utilities
-* `infer.js` - Type inferral on parse tree
-* `compile.js` - Parse tree -> C++, and calling of GCC
+* `src/utils.js` - general utilities
+* `src/infer.js` - Type inferral on parse tree
+* `src/compile.js` - Parse tree -> C++, and calling of GCC
 * `server.js` - server that performs compilation for the Web IDE
-* `index.js` - simple command-line test
-* `test.js` - test in such a way that the C code is compiled into Espruino - allowing nice easy GDB debug
+* `test.js` - simple command-line test
+* `test_espruino.js` - test in such a way that the C code is compiled into Espruino - allowing nice easy GDB debug
 
 
 Setup
@@ -34,4 +34,3 @@ Running
 
 * Run `node server.js`
 * Go into Web IDE settings and set `Communications / JavaScript Compiler URL` to `http://localhost:32766`
- 

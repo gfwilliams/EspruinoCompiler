@@ -1,50 +1,58 @@
-// Test by compiling the code into Espruino itself
 var acorn = require("acorn");
-var fs = require("fs");
-var jsToC = require("./compile.js").jsToC;
+compileFunction = require("./src/compile.js").compileFunction;
 
-var filename = "tests/test.js";
+var exports = { "jsvLock": 14545, "jsvLockAgainSafe": 14533, "jsvUnLock": 14509, "jsvSkipName": 43285,
+    "jsvMathsOp": 82821, "jsvMathsOpSkipNames": 163963, "jsvNewFromFloat": 174517, "jsvNewFromInteger": 174559, "jsvNewFromString": 174989,
+    "jsvNewFromBool": 174537, "jsvGetFloat": 76897, "jsvGetInteger": 173429, "jsvGetBool": 77173, "jspeiFindInScopes": 37173,
+    "jspReplaceWith": 96345, "jspeFunctionCall": 127017, "jspGetNamedVariable": 93377, "jspGetNamedField": 93233, "jspGetVarNamedField": 92833,
+    "jsvNewWithFlags": 174313 };
+var options = {exports:exports, boardInfo:{cpu:"cortexm4"}};
 
-var js = fs.readFileSync(filename).toString();
-var ast = acorn.parse(js, { ecmaVersion : 6 });
-ast.body.forEach(function(node) {
-  if (node.type=="FunctionDeclaration") {
-    if (node.body.type=="BlockStatement" &&
-        node.body.body.length>0 &&
-        node.body.body[0].type=="ExpressionStatement" &&
-        node.body.body[0].expression.type=="Literal" && 
-        node.body.body[0].expression.value=="compiled") {
-      
-      var compiled = jsToC(node);
-      
-      fs.writeFileSync(filename+".h", compiled.cArgSpec+";\n");
-      fs.writeFileSync(filename+".c",
-          '/*JSON{\n'+
-          ' "type" : "function",\n'+
-          ' "name" : "'+compiled.functionName+'",\n'+
-          ' "generate" : "'+compiled.functionName+'",\n'+
-          ' "params" : [\n'+
-          '  ["a","JsVar",""]\n'+
-          ' ],\n'+
-          ' "return" : ["JsVar",""]\n'+
-          '}\n'+
-          '*/\n');      
-      fs.writeFileSync(filename+"c.cpp",
-          'extern "C" {\n'+
-          '#include "src/jsvar.h"\n'+
-          '#include "src/jsparse.h"\n'+
-          "#include "+JSON.stringify("../"+filename+".h")+"\n"+
-          "}\n"+
-          "\n"+
-          compiled.code+"\n");
-      
-      var exec = require('child_process').exec;
-      var sys = require('sys');
-      var cmd = "DEBUG=1 CFILE=../EspruinoCompiler/"+filename+".c CPPFILE=../EspruinoCompiler/"+filename+"c.cpp make";
-      exec(cmd, { cwd : "../Espruino" }, function (error, stdout, stderr) { 
-        if (stdout) sys.print('stdout: ' + stdout+"\n");
-        if (stderr) sys.print('stderr: ' + stderr+"\n");
-      });
-    }
+function compileCode(code, callback) {
+  var offset = 0;
+  var tasks = 0;
+  try {
+    var ast = acorn.parse(code, { ecmaVersion : 6 });
+    ast.body.forEach(function(node) {
+      if (node.type=="FunctionDeclaration") {
+        if (node.body.type=="BlockStatement" &&
+            node.body.body.length>0 &&
+            node.body.body[0].type=="ExpressionStatement" &&
+            node.body.body[0].expression.type=="Literal" &&
+            node.body.body[0].expression.value=="compiled") {
+          try {
+            tasks++;
+            compileFunction(node, options, function(newCode) {
+              if (newCode) {
+                //console.log(asm);
+                //console.log(node);
+                code = code.substr(0,node.start+offset) + newCode + code.substr(node.end+offset);
+                offset += newCode.length - (node.end-node.start); // offset for future code snippets
+              }
+              tasks--;
+              if (tasks==0)
+                callback(code);
+            });
+          } catch (err) {
+            console.warn(err.stack);
+            console.warn("In 'compiled' function: "+err.toString());
+          }
+
+          /**/
+        }
+      }
+    });
+  } catch (err) {
+    console.log(err);
+    console.warn("Acorn parse for plugins/compiler.js failed. Your code is probably broken.");
+    callback();
   }
+  if (tasks==0)
+    callback(code);
+}
+
+
+compileCode(require("fs").readFileSync("tests/test.js").toString(), function(d) {
+  console.log("========================================================== FINAL:");
+  console.log(d);
 });

@@ -1,9 +1,9 @@
 // Simple webserver that takes requests for compilation and sends back the result
 var acorn = require("acorn");
 var qs = require('querystring');
-var utils = require("./utils.js");
-compileFunction = require("./compile.js").compileFunction;
-compileCFunction = require("./compile.js").compileCFunction;
+var utils = require("./src/utils.js");
+compileFunction = require("./src/compile.js").compileFunction;
+compileCFunction = require("./src/compile.js").compileCFunction;
 
 function compile_js(js, options, callback) {
   var ast = acorn.parse(js, { ecmaVersion : 6 });
