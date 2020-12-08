@@ -21,13 +21,9 @@ function compile_js(js, options, callback) {
   }
 }
 
-function respondWithCompilerMessage(response, message) {
-  response.end("console.log("+JSON.stringify(
-      "---------------------------------------------------\n"+
-      "                                 COMPILER MESSAGE\n"+
-      "---------------------------------------------------\n"+
-      message+"\n"+
-      "---------------------------------------------------")+")");
+function respondWithCompilerMessage(response, message, code) {
+  response.end((code?(code.trim()+"\n"):"")+"console.log("+JSON.stringify(
+      "[ COMPILER MESSAGE ] : "+message)+")");
 }
 
 function handlePost(post, response) {
@@ -38,7 +34,7 @@ function handlePost(post, response) {
   if (post.board)
     boardInfo = utils.SUPPORTED_BOARDS[post.board];
   if (boardInfo===undefined)
-    return respondWithCompilerMessage(response, "Only offical Espruino boards are supported by the Compiler Service");
+    return respondWithCompilerMessage(response, "Only offical Espruino boards are supported by the Compiler Service", post.js);
 
   var exports;
   if (post.exptr) {
@@ -47,7 +43,7 @@ function handlePost(post, response) {
     try {
       exports = JSON.parse(post.exports);
     } catch (ex) {
-      respondWithCompilerMessage(response, "Unable to parse EXPORTS");
+      respondWithCompilerMessage(response, "Unable to parse EXPORTS", post.js);
       return;
     }
   }
@@ -61,7 +57,7 @@ function handlePost(post, response) {
   if (post.js) {
     try {
       compile_js(post.js, options, function(err, code) {
-        if (err) return respondWithCompilerMessage(response,err);
+        if (err) return respondWithCompilerMessage(response,err, post.js);
         console.log("----------------------------------------");
         console.log(code);
         console.log("----------------------------------------");
@@ -74,12 +70,12 @@ function handlePost(post, response) {
       if ("object"==typeof ex && ex.stack)console.log(ex.stack);
       else console.log(ex.toString());
       console.log("===============================================");
-      respondWithCompilerMessage(response, ex.toString());
+      respondWithCompilerMessage(response, ex.toString(), post.js);
     }
   } else if (post.c) {
     try {
       compileCFunction(post.c, options, function(err, code) {
-        if (err) return respondWithCompilerMessage(response,err);
+        if (err) return respondWithCompilerMessage(response,err, post.js);
         console.log("----------------------------------------");
         console.log(code);
         console.log("----------------------------------------");
@@ -92,10 +88,10 @@ function handlePost(post, response) {
       if ("object"==typeof ex && ex.stack)console.log(ex.stack);
       else console.log(ex.toString());
       console.log("===============================================");
-      respondWithCompilerMessage(response, ex.toString());
+      respondWithCompilerMessage(response, ex.toString(), post.js);
     }
   } else {
-    respondWithCompilerMessage(response, "Unknown compilation arguments");
+    respondWithCompilerMessage(response, "Unknown compilation arguments", post.js);
   }
 }
 
