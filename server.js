@@ -34,7 +34,7 @@ function handlePost(post, response) {
   if (post.board)
     boardInfo = utils.SUPPORTED_BOARDS[post.board];
   if (boardInfo===undefined)
-    return respondWithCompilerMessage(response, "Only offical Espruino boards are supported by the Compiler Service", post.js);
+    return respondWithCompilerMessage(response, "Only official Espruino boards are supported by the Compiler Service", post.js);
 
   var exports;
   if (post.exptr) {
