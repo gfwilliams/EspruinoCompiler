@@ -84,8 +84,9 @@ var nodeHandlers = {
               operator : node.operator,
               left : { type : "Literal", value : 0, varType : "int" },
               right : node.argument,
+              varType : node.argument.varType
         };
-        return handleAsJsVar(expr);
+        return handle(expr, node.argument.varType);
       } else {
         throw new Error("Only '!', '~', '-', and '+' are implemented as a unary expression");
       }
@@ -444,7 +445,7 @@ function gcc(code, options, callback) {
     console.warn('Unknown CPU! ' + options.boardInfo.cpu);
   }
   if (options.boardInfo.nrf52) // on nRF52 use hardware floating point unit
-    cflags += "-mfloat-abi=softfp -mfpu=fpv4-sp-d16 -fsingle-precision-constant -Wdouble-promotion -Wfloat-conversion ";
+    cflags += "-mfloat-abi=hard -mfpu=fpv4-sp-d16 -fsingle-precision-constant -Wdouble-promotion -Wfloat-conversion ";
   else
     cflags += "-mfloat-abi=soft ";
   cflags += "-nostdinc -nostdlib ";
