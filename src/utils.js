@@ -3,6 +3,7 @@ exports.SUPPORTED_BOARDS = {
   "PICO_R1_3":{cpu:"cortexm4"},
   "ESPRUINOWIFI":{cpu:"cortexm4"},
   "BANGLEJS":{cpu:"cortexm4", nrf52:true},
+  "BANGLEJS2":{cpu:"cortexm4", nrf52:true},  
   "PUCKJS":{cpu:"cortexm4", nrf52:true},
   "PIXLJS":{cpu:"cortexm4", nrf52:true},
   "MDBT42Q":{cpu:"cortexm4", nrf52:true},
