@@ -3,15 +3,14 @@ exports.SUPPORTED_BOARDS = {
   "PICO_R1_3":{cpu:"cortexm4"},
   "ESPRUINOWIFI":{cpu:"cortexm4"},
   "BANGLEJS":{cpu:"cortexm4", nrf52:true},
+  "BANGLEJS2":{cpu:"cortexm4", nrf52:true},
   "PUCKJS":{cpu:"cortexm4", nrf52:true},
   "PIXLJS":{cpu:"cortexm4", nrf52:true},
   "MDBT42Q":{cpu:"cortexm4", nrf52:true},
-  "WIO_LTE":{cpu:"cortexm4"},
+  "MINEWI10":{cpu:"cortexm4", nrf52:true},
   "NRF52832DK":{cpu:"cortexm4",nrf52:true},
   "NRF52840DK":{cpu:"cortexm4",nrf52:true},
-  "RAK8211":{cpu:"cortexm4",nrf52:true},
-  "RAK8212":{cpu:"cortexm4",nrf52:true},
-  "STM32L496GDISCOVERY":{cpu:"cortexm4"}
+  "DICKENS":{cpu:"cortexm4",nrf52:true},
 };
 
 exports.isFloat = function(n) {
