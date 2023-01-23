@@ -12,7 +12,7 @@ SECTIONS
     . = ALIGN(4);
     *(.entryPoint)
   }
-  /* Then code, then constants */
+  /* We put everything in .text section as we load everything into RAM as one binary string */
 
   .text :
   {
@@ -22,18 +22,9 @@ SECTIONS
     *(.rodata)
     *(.rodata*)
     . = ALIGN(4);
-  } >RAM
-
-  .data :
-  {
-    . = ALIGN(4);
     *(.data)           /* .data sections */
     *(.data*)          /* .data* sections */
-  } >RAM
-
-  .bss :
-  {
-    /* This is used by the startup in order to initialize the .bss secion */
+    . = ALIGN(4);
     *(.bss)
     *(.bss*)
     *(COMMON)
