@@ -82,11 +82,11 @@ exports.getFunctionDecls = function(exports) {
   "jsvGetFloat" : "double (*jsvGetFloat)(JsVar *v) = (double(*)(JsVar *))",
   "jsvGetInteger" : "int (*jsvGetInteger)(JsVar *v) = (int(*)(JsVar *))",
   "jsvGetBool" : "bool (*jsvGetBool)(JsVar *v) = (bool(*)(JsVar *))",
+  "jsvReplaceWith" : "void (*jsvReplaceWith)(JsVar *a, JsVar *b) = (void(*)(JsVar *, JsVar *))",
+  "jspeFunctionCall" : "JsVar *(*jspeFunctionCall)(JsVar *function, JsVar *functionName, JsVar *thisArg, bool isParsing, int argCount, JsVar **argPtr) = (JsVar *(*)(JsVar *, JsVar *, JsVar *, bool, int, JsVar **))",
   "jspGetNamedVariable" : "JsVar *(*jspGetNamedVariable)(const char *n) = (JsVar *(*)(const char *))",
   "jspGetNamedField" : "JsVar *(*jspGetNamedField)(JsVar *o, const char *n, bool returnName) = (JsVar *(*)(JsVar *,const char *, bool))",
   "jspGetVarNamedField" : "JsVar *(*jspGetVarNamedField)(JsVar *object, JsVar *nameVar, bool returnName) = (JsVar *(*)(JsVar *,JsVar *, bool))",
-  "jspReplaceWith" : "void (*jspReplaceWith)(JsVar *a, JsVar *b) = (void(*)(JsVar *, JsVar *))",
-  "jspeFunctionCall" : "JsVar *(*jspeFunctionCall)(JsVar *function, JsVar *functionName, JsVar *thisArg, bool isParsing, int argCount, JsVar **argPtr) = (JsVar *(*)(JsVar *, JsVar *, JsVar *, bool, int, JsVar **))",
   };
 
   if ("number"==typeof exports) {
@@ -129,7 +129,7 @@ int  jsvGetInteger(JsVar *v) {
 bool  jsvGetBool(JsVar *v) {
   return ( (bool(*)(JsVar *))EXPTR[11])(v);
 }
-void  jspReplaceWith(JsVar *a, JsVar *b) {
+void  jsvReplaceWith(JsVar *a, JsVar *b) {
   return ( (void(*)(JsVar *, JsVar *))EXPTR[12])(a,b);
 }
 JsVar * jspeFunctionCall(JsVar *function, JsVar *functionName, JsVar *thisArg, bool isParsing, int argCount, JsVar **argPtr) {
