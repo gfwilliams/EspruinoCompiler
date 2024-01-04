@@ -444,10 +444,11 @@ function gcc(code, options, callback) {
     default:
     console.warn('Unknown CPU! ' + options.boardInfo.cpu);
   }
-  if (options.boardInfo.nrf52) // on nRF52 use hardware floating point unit
-    cflags += "-mfloat-abi=hard -mfpu=fpv4-sp-d16 -fsingle-precision-constant -Wdouble-promotion -Wfloat-conversion ";
-  else
-    cflags += "-mfloat-abi=soft ";
+//  if (options.boardInfo.nrf52) // on nRF52 use hardware floating point unit
+//    cflags += "-mfloat-abi=hard -mfpu=fpv4-sp-d16 -fsingle-precision-constant -Wdouble-promotion -Wfloat-conversion ";
+//  else
+  // now all devices use softfp 
+  cflags += "-mfloat-abi=soft  -mfpu=fpv4-sp-d16 ";
   cflags += "-nostdinc -nostdlib ";
   cflags += "-fno-common -fno-exceptions -fdata-sections -ffunction-sections ";
   cflags += "-flto -fno-fat-lto-objects -Wl,--allow-multiple-definition ";
