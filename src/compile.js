@@ -192,9 +192,9 @@ var nodeHandlers = {
           // replaceWith doesn't return anything, so we must store the value ourselves
           if (needsResult) {
             var tv = getTempVar();
-            return "({SV "+tv+"="+handleAsJsVar(node.left)+";"+call("jspReplaceWith", tv, rhs)+";"+tv+";})";
+            return "({SV "+tv+"="+handleAsJsVar(node.left)+";"+call("jsvReplaceWith", tv, rhs)+";"+tv+";})";
           } else
-            return call("jspReplaceWith", handleAsJsVar(node.left), rhs);
+            return call("jsvReplaceWith", handleAsJsVar(node.left), rhs);
         }
       } else {
         return handle(node.left, true) + " "+ node.operator + " " + handle(node.right, true);
@@ -447,7 +447,7 @@ function gcc(code, options, callback) {
 //  if (options.boardInfo.nrf52) // on nRF52 use hardware floating point unit
 //    cflags += "-mfloat-abi=hard -mfpu=fpv4-sp-d16 -fsingle-precision-constant -Wdouble-promotion -Wfloat-conversion ";
 //  else
-  // now all devices use softfp 
+  // now all devices use softfp
   cflags += "-mfloat-abi=soft  -mfpu=fpv4-sp-d16 ";
   cflags += "-nostdinc -nostdlib ";
   cflags += "-fno-common -fno-exceptions -fdata-sections -ffunction-sections ";
