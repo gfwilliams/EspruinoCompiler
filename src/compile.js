@@ -425,6 +425,12 @@ function gcc(code, options, callback) {
   var crypto = require('crypto');
   var filename = "tmp/out"+crypto.randomBytes(4).readUInt32LE(0);
 
+  code = code.replace(/^\s*#include\s*<([^>]+)>\s*/gm, (m, file) => {
+    if (file == 'math.h')
+      return (require('./math.js')[options.boardInfo.cpu] || '');
+    return m;
+  });
+
   // save to file
   require("fs").writeFileSync(filename+".cpp", code);
   // now run gcc
@@ -455,6 +461,7 @@ function gcc(code, options, callback) {
   cflags += "-fpic -fpie ";
   cflags += "-fpermissive "; // for (int i=0;...);return i;
   cflags += "-fpreprocessed "; // disable preprocessing
+  cflags += "-std=c++17 ";
   cflags += "-Os ";
   cflags += "-Tinc/linker.ld ";
 
