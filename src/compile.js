@@ -450,11 +450,14 @@ function gcc(code, options, callback) {
     default:
     console.warn('Unknown CPU! ' + options.boardInfo.cpu);
   }
-//  if (options.boardInfo.nrf52) // on nRF52 use hardware floating point unit
-//    cflags += "-mfloat-abi=hard -mfpu=fpv4-sp-d16 -fsingle-precision-constant -Wdouble-promotion -Wfloat-conversion ";
-//  else
-  // now all devices use softfp
-  cflags += "-mfloat-abi=soft  -mfpu=fpv4-sp-d16 ";
+  /* Specifies which floating-point ABI to use. Permissible values are: ‘soft’, ‘softfp’ and ‘hard’.
+    Specifying ‘soft’ causes GCC to generate output containing library calls for floating-point operations. 
+    ‘softfp’ allows the generation of code using hardware floating-point instructions, but still uses the soft-float calling conventions. 
+   ‘hard’ allows generation of floating-point instructions and uses FPU-specific calling conventions. */
+  if (options.boardInfo.cpu == "cortexm3")
+    cflags += "-mfloat-abi=soft -mfpu=fpv4-sp-d16 "; // cortex m3 doesn't have an FPU
+  else
+    cflags += "-mfloat-abi=softfp -mfpu=fpv4-sp-d16 "; // everything else, try and use it
   cflags += "-nostdinc -nostdlib ";
   cflags += "-fno-common -fno-exceptions -fdata-sections -ffunction-sections ";
   cflags += "-flto -fno-fat-lto-objects -Wl,--allow-multiple-definition ";
