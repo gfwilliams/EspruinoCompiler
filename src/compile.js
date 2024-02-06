@@ -527,7 +527,7 @@ exports.compileCFunction = function(code, options, callback) {
     var binary = result.binary.slice(offset);
     var id = "id"+(0|(Math.random()*1576858));
     var src = "(function(){\n";
-    src += "  var bin=E.toFlatString(atob("+JSON.stringify(binary.toString('base64'))+"));\n";
+    src += "  var bin=(E.toFlatString||E.toString)(atob("+JSON.stringify(binary.toString('base64'))+"));\n";
     src += "  return {\n";
     for (var i=0;i<entryPoints.length;i++) {
       var addr = result.binary.readInt32LE(i*4) - offset;
@@ -551,7 +551,7 @@ exports.compileFunction = function(node, options, callback) {
 
   gcc(code, options, function(err, result) {
     if (err) return callback(err);
-    var str = "E.toFlatString(atob("+JSON.stringify(result.binary.toString('base64'))+"))";
+    var str = "(E.toFlatString||E.toString)(atob("+JSON.stringify(result.binary.toString('base64'))+"))";
     var func = "E.nativeCall(1, "+JSON.stringify(compiled.jsArgSpec)+", "+str+")";
     callback(null,"var "+node.id.name+" = "+func+";");
   });
