@@ -6,11 +6,13 @@ exports.SUPPORTED_BOARDS = {
   "BANGLEJS2":{cpu:"cortexm4", nrf52:true},
   "PUCKJS":{cpu:"cortexm4", nrf52:true},
   "PIXLJS":{cpu:"cortexm4", nrf52:true},
+  "JOLTJS":{cpu:"cortexm4", nrf52:true},
   "MDBT42Q":{cpu:"cortexm4", nrf52:true},
   "MINEWI10":{cpu:"cortexm4", nrf52:true},
   "NRF52832DK":{cpu:"cortexm4",nrf52:true},
   "NRF52840DK":{cpu:"cortexm4",nrf52:true},
   "DICKENS":{cpu:"cortexm4",nrf52:true},
+  "PIPBOY":{cpu:"cortexm4"},
 };
 
 exports.isFloat = function(n) {
